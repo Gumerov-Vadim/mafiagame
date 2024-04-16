@@ -1,4 +1,4 @@
-import {io} from 'socket.io-client';
+const { io } = require('socket.io-client');
 
 const options = {
     "force new connection": true,
@@ -8,4 +8,4 @@ const options = {
 }
 const socket = io('http://localhost:3001',options);
 
-export default socket;
+module.exports = socket;

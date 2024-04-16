@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {useNavigate} from 'react-router';
-import socket from "../../socket";
 import ACTIONS from "../../socket/actions";
 import {v4} from 'uuid';
+import socket from "../../socket";
 export default function Main(){
     const navigate = useNavigate();
     const [rooms, updateRooms] = useState([]);

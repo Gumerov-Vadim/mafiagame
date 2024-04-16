@@ -1,6 +1,6 @@
 const path = require('path');
 const express = require('express');
-const { default: socket } = require('./src/socket');
+const { default: socket } = require('./src/socket/index.js');
 const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
@@ -70,6 +70,7 @@ io.on('connection',socket=>{
         });
 
         shareRoomsInfo();
+        console.log('Socket disconnected!');
     }
 
     socket.on(ACTIONS.LEAVE, leaveRoom);

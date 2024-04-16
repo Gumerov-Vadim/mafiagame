@@ -11,7 +11,6 @@ function App() {
         <Route exact path='/' element={<Main/>} />
         <Route path='*' element={<NotFound404/>} />
       </Routes>
-      test
     </BrowserRouter>
   );
 }
