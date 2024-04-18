@@ -1,28 +1,32 @@
-import { useEffect, useState } from "react";
-import {useNavigate} from 'react-router';
+import { useEffect, useState, useRef } from "react";
+import { useNavigate } from 'react-router';
 import ACTIONS from "../../socket/actions";
-import {v4} from 'uuid';
+import { v4 } from 'uuid';
 import socket from "../../socket";
-export default function Main(){
+
+export default function Main() {
     const navigate = useNavigate();
     const [rooms, updateRooms] = useState([]);
-
-    useEffect(()=>{
-        socket.on(ACTIONS.SHARE_ROOMS,({rooms=[]}={})=>{
+    const rootNode = useRef();
+  
+    useEffect(() => {
+        socket.on(ACTIONS.SHARE_ROOMS, ({rooms = []} = {}) => {
+            if(rootNode.current){
             updateRooms(rooms);
+            }
         });
-    },[]);
+      }, []);
 
-    return(
+    return (
         <div>
             <h1>
-                Availabele Rooms
+                Available Rooms
             </h1>
             <ul>
-                {rooms.map(roomID=>(
+                {rooms.map(roomID => (
                     <li key={roomID}>
                         {roomID}
-                        <button onClick={()=>{
+                        <button onClick={() => {
                             navigate(`/room/${roomID}`);
                         }}>
                             JOIN ROOM
@@ -30,7 +34,7 @@ export default function Main(){
                     </li>
                 ))}
             </ul>
-            <button onClick={()=>{
+            <button onClick={() => {
                 navigate(`/room/${v4()}`);
             }}>
                 Create New Room

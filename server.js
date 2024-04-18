@@ -1,16 +1,16 @@
 const path = require('path');
 const express = require('express');
-const { default: socket } = require('./src/socket/index.js');
 const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
+const {version,validate} = require('uuid');
 
 const ACTIONS = require('./src/socket/actions');
 const PORT = process.env.PORT || 3001;
 
 function getClientRooms(){
     const {rooms} = io.sockets.adapter;
-    return Array.from(rooms.keys());
+    return Array.from(rooms.keys()).filter(roomID=>validate(roomID)&&version(roomID)===4);
 }
 
 function shareRoomsInfo(){
