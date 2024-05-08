@@ -164,7 +164,7 @@ export default function useWebRTC(roomID) {
           // height: 720,
         }
       });
-
+      console.log("test",localMediaStream.current);
       addNewClient(LOCAL_VIDEO, () => {
         const localVideoElement = peerMediaElements.current[LOCAL_VIDEO];
 
@@ -175,7 +175,6 @@ export default function useWebRTC(roomID) {
       });
     } catch (error) {
       console.error('Ошибка при получении мультимедиа:', error);
-      // Дополнительная логика обработки ошибки, если это необходимо.
     }
       
     }
@@ -195,6 +194,7 @@ export default function useWebRTC(roomID) {
     peerMediaElements.current[id] = node;
   }, []);
 
+  
   return {
     clients,
     provideMediaRef

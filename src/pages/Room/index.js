@@ -50,6 +50,7 @@ export default function Room() {
               width='100%'
               height='100%'
               ref={instance => {
+                console.log("test", clientID,instance,provideMediaRef);
                 provideMediaRef(clientID, instance);
               }}
               autoPlay
