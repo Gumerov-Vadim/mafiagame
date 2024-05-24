@@ -1,4 +1,3 @@
-
 import {useEffect, useRef, useCallback} from 'react';
 import freeice from 'freeice';
 import useStateWithCallback from './useStateWithCallback';
@@ -9,6 +8,7 @@ export const LOCAL_VIDEO = 'LOCAL_VIDEO';
 
 
 export default function useWebRTC(roomID) {
+  //Все доступные клиенты
   const [clients, updateClients] = useStateWithCallback([]);
 
   const addNewClient = useCallback((newClient, cb) => {
@@ -21,22 +21,28 @@ export default function useWebRTC(roomID) {
     }, cb);
   }, [updateClients]);
 
+  //Соединения с другими пользователями
   const peerConnections = useRef({});
+  //Ссылка на свой видеоэлемент, который транслируется с вебкамеры
   const localMediaStream = useRef(null);
+  //Ссылка на все видеоэлементы на странице
   const peerMediaElements = useRef({
     [LOCAL_VIDEO]: null,
   });
 
   useEffect(() => {
+    //Функция добавления нового пира при ADD_PEER
     async function handleNewPeer({peerID, createOffer}) {
       if (peerID in peerConnections.current) {
         return console.warn(`Already connected to peer ${peerID}`);
       }
 
+      //Создание объекта RTCPeerConnetion
       peerConnections.current[peerID] = new RTCPeerConnection({
-        iceServers: freeice(),
+        iceServers: freeice(), //предоставляем набор адресов ice серверов
       });
 
+      //Новый кандидат желает подключится, отправляем другим клиентам. Срабатывает после setLocalDescription
       peerConnections.current[peerID].onicecandidate = event => {
         if (event.candidate) {
           socket.emit(ACTIONS.RELAY_ICE, {
@@ -47,13 +53,16 @@ export default function useWebRTC(roomID) {
       }
 
       let tracksNumber = 0;
+      //При получении нового трека извлекаем стримы (remoteStream)
       peerConnections.current[peerID].ontrack = ({streams: [remoteStream]}) => {
         tracksNumber++
 
         if (tracksNumber === 2) { // video & audio tracks received
           tracksNumber = 0;
+          //Добавляем нового клиента, рендерим 
           addNewClient(peerID, () => {
             if (peerMediaElements.current[peerID]) {
+              //Транслируем в видеоэлементе, который создался для PeerID remoteStream.
               peerMediaElements.current[peerID].srcObject = remoteStream;
             } else {
               // FIX LONG RENDER IN CASE OF MANY CLIENTS
@@ -73,13 +82,15 @@ export default function useWebRTC(roomID) {
         }
       }
 
+      //Добавляем к peerConnetion наши localMediaStream треки.
       localMediaStream.current.getTracks().forEach(track => {
         peerConnections.current[peerID].addTrack(track, localMediaStream.current);
       });
-
+      //Создание оффера
       if (createOffer) {
         const offer = await peerConnections.current[peerID].createOffer();
 
+        //После этого срабатывает eventListener onicecandidate
         await peerConnections.current[peerID].setLocalDescription(offer);
 
         socket.emit(ACTIONS.RELAY_SDP, {
@@ -97,16 +108,19 @@ export default function useWebRTC(roomID) {
   }, [addNewClient]);
 
   useEffect(() => {
+    
+    //Функция для обработки remote description
     async function setRemoteMedia({peerID, sessionDescription: remoteDescription}) {
       await peerConnections.current[peerID]?.setRemoteDescription(
         new RTCSessionDescription(remoteDescription)
       );
 
+      //Если получили предложение, то создаём ответ
       if (remoteDescription.type === 'offer') {
         const answer = await peerConnections.current[peerID].createAnswer();
 
         await peerConnections.current[peerID].setLocalDescription(answer);
-
+        //Отправляем ответ
         socket.emit(ACTIONS.RELAY_SDP, {
           peerID,
           sessionDescription: answer,
@@ -114,6 +128,7 @@ export default function useWebRTC(roomID) {
       }
     }
 
+    //Реагирование на получение remote description
     socket.on(ACTIONS.SESSION_DESCRIPTION, setRemoteMedia)
 
     return () => {
@@ -122,6 +137,7 @@ export default function useWebRTC(roomID) {
   }, []);
 
   useEffect(() => {
+    //Реагирование на получение ICE CANDIDATE
     socket.on(ACTIONS.ICE_CANDIDATE, ({peerID, iceCandidate}) => {
       peerConnections.current[peerID]?.addIceCandidate(
         new RTCIceCandidate(iceCandidate)
@@ -144,7 +160,7 @@ export default function useWebRTC(roomID) {
 
       updateClients(list => list.filter(c => c !== peerID));
     };
-
+    //При удалении соединения
     socket.on(ACTIONS.REMOVE_PEER, handleRemovePeer);
 
     return () => {
@@ -152,7 +168,9 @@ export default function useWebRTC(roomID) {
     }
   }, [updateClients]);
 
+  //UseEffect в котором захватывается медиа и добавляется в localMediaStream, после этого вызывается socket JOIN
   useEffect(() => {
+    //Функция захвата видео с камеры
     async function startCapture() {
       try{
       localMediaStream.current = await navigator.mediaDevices.getUserMedia({
@@ -163,7 +181,16 @@ export default function useWebRTC(roomID) {
           // width: 1280,
           // height: 720,
         }
+        // video:false
       });
+
+      
+      let test123 = true
+      setTimeout(() => {
+        localMediaStream.current.getVideoTracks().forEach(track=>track.enabled=test123);
+        test123=!test123;
+        console.log(test123);
+      }, 1000);
       console.log("test",localMediaStream.current);
       addNewClient(LOCAL_VIDEO, () => {
         const localVideoElement = peerMediaElements.current[LOCAL_VIDEO];

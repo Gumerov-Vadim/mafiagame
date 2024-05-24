@@ -10,6 +10,7 @@ export default function Main() {
     const rootNode = useRef();
   
     useEffect(() => {
+        //Обновляем комнаты, когда они меняются
         socket.on(ACTIONS.SHARE_ROOMS, ({rooms = []} = {}) => {
             if(rootNode.current){
             updateRooms(rooms);
