@@ -1,8 +1,5 @@
 import { useParams } from 'react-router';
-import { useEffect } from 'react';
 import useWebRTC, { LOCAL_VIDEO } from '../../hooks/useWebRTC';
-import socket from '../../socket';
-import ACTIONS from '../../socket/actions';
 
 function layout(clientsNumber = 1) {
   const pairs = Array.from({ length: clientsNumber }).reduce((acc, next, index, arr) => {
@@ -26,49 +23,24 @@ export default function Room() {
   const { clients, provideMediaRef, enableCamera, disableCamera } = useWebRTC(roomID);
   const videoLayout = layout(clients.length);
 
-  useEffect(() => {
-    socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
-      const videoElement = document.getElementById(peerID).querySelector('video');
-      if (videoElement && videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach(track => track.enabled = true);
-      }
-    });
-
-    socket.on(ACTIONS.DISABLE_CAMERA, ({ peerID }) => {
-      const videoElement = document.getElementById(peerID).querySelector('video');
-      if (videoElement && videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach(track => track.enabled = false);
-      }
-    });
-
-    return () => {
-      socket.off(ACTIONS.ENABLE_CAMERA);
-      socket.off(ACTIONS.DISABLE_CAMERA);
-    };
-  }, []);
-
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', height: '100vh' }}>
-      {clients.map((clientID, index) => {
-        return (
-          <div key={clientID} style={videoLayout[index]} id={clientID}>
-            <video
-              width='100%'
-              height='100%'
-              ref={instance => {
-                provideMediaRef(clientID, instance);
-              }}
-              autoPlay
-              playsInline
-              muted={clientID === LOCAL_VIDEO}
-            />
+      {clients.map((clientID, index) => (
+        <div key={clientID} style={videoLayout[index]} id={clientID}>
+          <video
+            width='100%'
+            height='100%'
+            ref={instance => provideMediaRef(clientID, instance)}
+            autoPlay
+            playsInline
+            muted={clientID === LOCAL_VIDEO}
+          />
             <div style={{ position: 'relative', bottom: '20px', left: '10px' }}>
               <button onClick={() => enableCamera(clientID)}>Enable</button>
               <button onClick={() => disableCamera(clientID)}>Disable</button>
             </div>
-          </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }

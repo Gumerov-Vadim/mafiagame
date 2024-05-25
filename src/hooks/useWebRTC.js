@@ -210,19 +210,43 @@ export default function useWebRTC(roomID) {
     };
   }, [addNewClient,roomID]);
 
-  // Обработчик включения и отключения камеры
+  
+  const enableCamera = useCallback((peerID) => {
+    if (peerID === LOCAL_VIDEO) {
+      localMediaStream.current.getVideoTracks().forEach(track => (track.enabled = true));
+    } else {
+      const videoElement = peerMediaElements.current[peerID];
+      if (videoElement && videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => (track.enabled = true));
+      }
+    }
+    socket.emit(ACTIONS.ENABLE_CAMERA, { peerID });
+  }, []);
+
+  const disableCamera = useCallback((peerID) => {
+    if (peerID === LOCAL_VIDEO) {
+      localMediaStream.current.getVideoTracks().forEach(track => (track.enabled = false));
+    } else {
+      const videoElement = peerMediaElements.current[peerID];
+      if (videoElement && videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => (track.enabled = false));
+      }
+    }
+    socket.emit(ACTIONS.DISABLE_CAMERA, { peerID });
+  }, []);
+
   useEffect(() => {
     socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
       const videoElement = peerMediaElements.current[peerID];
       if (videoElement && videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach(track => track.enabled = true);
+        videoElement.srcObject.getTracks().forEach(track => (track.enabled = true));
       }
     });
 
     socket.on(ACTIONS.DISABLE_CAMERA, ({ peerID }) => {
       const videoElement = peerMediaElements.current[peerID];
       if (videoElement && videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach(track => track.enabled = false);
+        videoElement.srcObject.getTracks().forEach(track => (track.enabled = false));
       }
     });
 
@@ -231,14 +255,7 @@ export default function useWebRTC(roomID) {
       socket.off(ACTIONS.DISABLE_CAMERA);
     };
   }, []);
-  
-  const enableCamera = useCallback(clientID => {
-    socket.emit(ACTIONS.ENABLE_CAMERA, { peerID: clientID });
-  }, []);
 
-  const disableCamera = useCallback(clientID => {
-    socket.emit(ACTIONS.DISABLE_CAMERA, { peerID: clientID });
-  }, []);
 
   const provideMediaRef = useCallback((id, node) => {
     peerMediaElements.current[id] = node;
