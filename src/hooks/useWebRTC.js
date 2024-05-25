@@ -185,13 +185,6 @@ export default function useWebRTC(roomID) {
       });
 
       
-      let test123 = true
-      setTimeout(() => {
-        localMediaStream.current.getVideoTracks().forEach(track=>track.enabled=test123);
-        test123=!test123;
-        console.log(test123);
-      }, 1000);
-      console.log("test",localMediaStream.current);
       addNewClient(LOCAL_VIDEO, () => {
         const localVideoElement = peerMediaElements.current[LOCAL_VIDEO];
 
@@ -217,6 +210,36 @@ export default function useWebRTC(roomID) {
     };
   }, [addNewClient,roomID]);
 
+  // Обработчик включения и отключения камеры
+  useEffect(() => {
+    socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
+      const videoElement = peerMediaElements.current[peerID];
+      if (videoElement && videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => track.enabled = true);
+      }
+    });
+
+    socket.on(ACTIONS.DISABLE_CAMERA, ({ peerID }) => {
+      const videoElement = peerMediaElements.current[peerID];
+      if (videoElement && videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => track.enabled = false);
+      }
+    });
+
+    return () => {
+      socket.off(ACTIONS.ENABLE_CAMERA);
+      socket.off(ACTIONS.DISABLE_CAMERA);
+    };
+  }, []);
+  
+  const enableCamera = useCallback(clientID => {
+    socket.emit(ACTIONS.ENABLE_CAMERA, { peerID: clientID });
+  }, []);
+
+  const disableCamera = useCallback(clientID => {
+    socket.emit(ACTIONS.DISABLE_CAMERA, { peerID: clientID });
+  }, []);
+
   const provideMediaRef = useCallback((id, node) => {
     peerMediaElements.current[id] = node;
   }, []);
@@ -224,6 +247,9 @@ export default function useWebRTC(roomID) {
   
   return {
     clients,
-    provideMediaRef
+    provideMediaRef,
+    enableCamera,
+    disableCamera,
   };
+
 }

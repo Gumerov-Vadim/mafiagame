@@ -1,48 +1,54 @@
-import {useParams} from 'react-router';
-import useWebRTC, {LOCAL_VIDEO} from '../../hooks/useWebRTC';
+import { useParams } from 'react-router';
+import { useEffect } from 'react';
+import useWebRTC, { LOCAL_VIDEO } from '../../hooks/useWebRTC';
+import socket from '../../socket';
+import ACTIONS from '../../socket/actions';
 
 function layout(clientsNumber = 1) {
-  const pairs = Array.from({length: clientsNumber})
-    .reduce((acc, next, index, arr) => {
-      if (index % 2 === 0) {
-        acc.push(arr.slice(index, index + 2));
-      }
-
-      return acc;
-    }, []);
-
+  const pairs = Array.from({ length: clientsNumber }).reduce((acc, next, index, arr) => {
+    if (index % 2 === 0) {
+      acc.push(arr.slice(index, index + 2));
+    }
+    return acc;
+  }, []);
   const rowsNumber = pairs.length;
   const height = `${100 / rowsNumber}%`;
-
   return pairs.map((row, index, arr) => {
-
     if (index === arr.length - 1 && row.length === 1) {
-      return [{
-        width: '100%',
-        height,
-      }];
+      return [{ width: '100%', height }];
     }
-
-    return row.map(() => ({
-      width: '50%',
-      height,
-    }));
+    return row.map(() => ({ width: '50%', height }));
   }).flat();
 }
 
 export default function Room() {
-  const {id: roomID} = useParams();
-  const {clients, provideMediaRef} = useWebRTC(roomID);
+  const { id: roomID } = useParams();
+  const { clients, provideMediaRef, enableCamera, disableCamera } = useWebRTC(roomID);
   const videoLayout = layout(clients.length);
 
+  useEffect(() => {
+    socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
+      const videoElement = document.getElementById(peerID).querySelector('video');
+      if (videoElement && videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => track.enabled = true);
+      }
+    });
+
+    socket.on(ACTIONS.DISABLE_CAMERA, ({ peerID }) => {
+      const videoElement = document.getElementById(peerID).querySelector('video');
+      if (videoElement && videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => track.enabled = false);
+      }
+    });
+
+    return () => {
+      socket.off(ACTIONS.ENABLE_CAMERA);
+      socket.off(ACTIONS.DISABLE_CAMERA);
+    };
+  }, []);
+
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexWrap: 'wrap',
-      height: '100vh',
-    }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', height: '100vh' }}>
       {clients.map((clientID, index) => {
         return (
           <div key={clientID} style={videoLayout[index]} id={clientID}>
@@ -50,13 +56,16 @@ export default function Room() {
               width='100%'
               height='100%'
               ref={instance => {
-                console.log("test", clientID,instance,provideMediaRef);
                 provideMediaRef(clientID, instance);
               }}
               autoPlay
               playsInline
               muted={clientID === LOCAL_VIDEO}
             />
+            <div style={{ position: 'relative', bottom: '20px', left: '10px' }}>
+              <button onClick={() => enableCamera(clientID)}>Enable</button>
+              <button onClick={() => disableCamera(clientID)}>Disable</button>
+            </div>
           </div>
         );
       })}
