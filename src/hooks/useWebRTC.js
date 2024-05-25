@@ -212,6 +212,7 @@ export default function useWebRTC(roomID) {
 
   
   const enableCamera = useCallback((peerID) => {
+    console.log(`enableCamera peerID:${peerID}`);
     if (peerID === LOCAL_VIDEO) {
       localMediaStream.current.getVideoTracks().forEach(track => (track.enabled = true));
     } else {
@@ -219,11 +220,12 @@ export default function useWebRTC(roomID) {
       if (videoElement && videoElement.srcObject) {
         videoElement.srcObject.getTracks().forEach(track => (track.enabled = true));
       }
+      socket.emit(ACTIONS.ENABLE_CAMERA, { peerID });
     }
-    socket.emit(ACTIONS.ENABLE_CAMERA, { peerID });
   }, []);
 
   const disableCamera = useCallback((peerID) => {
+    console.log(`disableCamera peerID:${peerID}`);
     if (peerID === LOCAL_VIDEO) {
       localMediaStream.current.getVideoTracks().forEach(track => (track.enabled = false));
     } else {
@@ -231,12 +233,13 @@ export default function useWebRTC(roomID) {
       if (videoElement && videoElement.srcObject) {
         videoElement.srcObject.getTracks().forEach(track => (track.enabled = false));
       }
+      socket.emit(ACTIONS.DISABLE_CAMERA, { peerID });
     }
-    socket.emit(ACTIONS.DISABLE_CAMERA, { peerID });
   }, []);
 
   useEffect(() => {
     socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
+      console.log(`socket on enableCamera peerID:${peerID}`);
       const videoElement = peerMediaElements.current[peerID];
       if (videoElement && videoElement.srcObject) {
         videoElement.srcObject.getTracks().forEach(track => (track.enabled = true));
@@ -244,6 +247,7 @@ export default function useWebRTC(roomID) {
     });
 
     socket.on(ACTIONS.DISABLE_CAMERA, ({ peerID }) => {
+      console.log(`socket on disableCamera peerID:${peerID}`);
       const videoElement = peerMediaElements.current[peerID];
       if (videoElement && videoElement.srcObject) {
         videoElement.srcObject.getTracks().forEach(track => (track.enabled = false));

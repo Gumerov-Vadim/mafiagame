@@ -118,14 +118,6 @@ io.on('connection', socket => {
   });
 
   socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
-    io.to(peerID).emit(ACTIONS.ENABLE_CAMERA, { peerID: socket.id });
-  });
-
-  socket.on(ACTIONS.DISABLE_CAMERA, ({ peerID }) => {
-    io.to(peerID).emit(ACTIONS.DISABLE_CAMERA, { peerID: socket.id });
-  });
-
-  socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
     io.emit(ACTIONS.ENABLE_CAMERA, { peerID });
   });
 
