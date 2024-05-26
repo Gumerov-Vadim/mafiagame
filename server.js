@@ -48,7 +48,7 @@ io.on('connection', socket => {
         peerID: socket.id,
         createOffer: false
       });
-
+      console.log(`========\nclientID:${clientID}\nsocket.id:${socket.id}`);
       //Оффер создаёт сторона, которая подключается
       socket.emit(ACTIONS.ADD_PEER, {
         peerID: clientID,
