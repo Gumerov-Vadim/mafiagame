@@ -243,6 +243,10 @@ export default function useWebRTC(roomID) {
       const videoElement = peerMediaElements.current[peerID];
       if (videoElement && videoElement.srcObject) {
         videoElement.srcObject.getTracks().forEach(track => (track.enabled = true));
+      }else{
+        const lve = peerMediaElements.current[LOCAL_VIDEO] 
+        if(lve&&lve.srcObject)
+        lve.srcObject.getTracks().forEach(track => (track.enabled = true));
       }
     });
 
@@ -251,6 +255,12 @@ export default function useWebRTC(roomID) {
       const videoElement = peerMediaElements.current[peerID];
       if (videoElement && videoElement.srcObject) {
         videoElement.srcObject.getTracks().forEach(track => (track.enabled = false));
+        console.log("здесь1");
+      }else{
+        const lve = peerMediaElements.current[LOCAL_VIDEO] 
+        if(lve&&lve.srcObject)
+        lve.srcObject.getTracks().forEach(track => (track.enabled = false));
+        console.log("здесь2");
       }
     });
 
