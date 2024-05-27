@@ -32,12 +32,15 @@ io.on('connection', socket => {
   socket.on(ACTIONS.JOIN, config => {
     const {room: roomID} = config; //Получаем комнату из конфига
     const {rooms: joinedRooms} = socket; //Получаем список всех комнат
-
+    console.log(`joinedRooms:${joinedRooms}\nroomID:${roomID}`);
+    joinedRooms.forEach(room => {
+      console.log(`\nroom:${room}`);      
+    });
     //Ошибка, если уже подключились к этой комнате
     if (Array.from(joinedRooms).includes(roomID)) {
       return console.warn(`Already joined to ${roomID}`);
     } 
-
+    console.log("test");
     //Получаем всех клиентов из этой комнаты
     const clients = Array.from(io.sockets.adapter.rooms.get(roomID) || []);
 

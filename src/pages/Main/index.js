@@ -12,6 +12,7 @@ export default function Main() {
     useEffect(() => {
         //Обновляем комнаты, когда они меняются
         socket.on(ACTIONS.SHARE_ROOMS, ({rooms = []} = {}) => {
+            console.log("test12345");
             if(rootNode.current){
             updateRooms(rooms);
             }
