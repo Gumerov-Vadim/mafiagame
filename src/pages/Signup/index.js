@@ -1,30 +1,43 @@
 import React, { useState } from 'react';
-import { auth, db  } from '../../firebase';
-import {createUserWithEmailAndPassword} from "firebase/auth"
+import { auth } from '../../firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+
 const Signup = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await db.collection('users').doc(userCredential.user.uid).set({
-        email: userCredential.user.email,
-        role: 'user'  // Роль по умолчанию
-      });
-    } catch (error) {
-      console.error("Error signing up:", error);
-    }
-  };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            alert('Пользователь успешно зарегистрирован');
+        } catch (error) {
+            setError(error.message);
+        }
+    };
 
-  return (
-    <form onSubmit={handleSignup}>
-      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
-      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
-      <button type="submit">Sign Up</button>
-    </form>
-  );
-};
+    return (
+        <div>
+            <h2>Регистрация</h2>
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+           <form onSubmit={handleSubmit}>
+                <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                />
+                <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Пароль"
+                />
+                <button type="submit">Зарегистрироваться</button>
+            </form>
+        </div>
+    );
+}
 
 export default Signup;
