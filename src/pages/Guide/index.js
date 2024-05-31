@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GestureRecognizer, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
+import Navbar from '../../components/Navbar';
 
 export default function Guide() {
   const [gestureRecognizer, setGestureRecognizer] = useState(null);
@@ -192,6 +193,7 @@ export default function Guide() {
 
   return (
     <div>
+    <Navbar/>
       <h1>Recognize hand gestures using the MediaPipe HandGestureRecognizer task</h1>
 
       <section id="demos" className={!gestureRecognizer ? "invisible" : ""}>

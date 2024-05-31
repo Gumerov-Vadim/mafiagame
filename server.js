@@ -28,14 +28,17 @@ io.on('connection', socket => {
   //При подключении делимся со всеми сокета информацией о комнатах.
   console.log("Socket connected!");
   shareRoomsInfo();
-
   socket.on(ACTIONS.JOIN, config => {
     const {room: roomID} = config; //Получаем комнату из конфига
+    // {
+    //   const clients = Array.from(io.sockets.adapter.rooms.get(roomID) || []);
+    //   socket.emit(ACTIONS.TEST, {clients, roomID});
+    // }
     const {rooms: joinedRooms} = socket; //Получаем список всех комнат
-    console.log(`joinedRooms:${joinedRooms}\nroomID:${roomID}`);
-    joinedRooms.forEach(room => {
-      console.log(`\nroom:${room}`);      
-    });
+    // console.log(`joinedRooms:${joinedRooms}\nroomID:${roomID}`);
+    // joinedRooms.forEach(room => {
+    //   console.log(`\nroom:${room}`);      
+    // });
     //Ошибка, если уже подключились к этой комнате
     if (Array.from(joinedRooms).includes(roomID)) {
       return console.warn(`Already joined to ${roomID}`);

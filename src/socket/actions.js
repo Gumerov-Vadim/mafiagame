@@ -9,7 +9,8 @@ const ACTIONS = {
     ICE_CANDIDATE: 'ice-candidate',
     SESSION_DESCRIPTION: 'session-description',
     ENABLE_CAMERA: 'enable-camera',
-    DISABLE_CAMERA: 'disable-camera'
+    DISABLE_CAMERA: 'disable-camera',
+    // TEST: 'test'
 };
 
 module.exports = ACTIONS;

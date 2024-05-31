@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { auth } from '../../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import Navbar from '../../components/Navbar';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
+    const navigate = useNavigate();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            alert('Пользователь успешно авторизован');
+
+            navigate(`/`);
         } catch (error) {
           setError(error.message);
         }
@@ -19,6 +24,7 @@ const Login = () => {
 
     return (
         <div>
+          <Navbar/>
             <h2>Авторизация</h2>
             {error && <p style={{ color: 'red' }}>{error}</p>}
             <form onSubmit={handleSubmit}>

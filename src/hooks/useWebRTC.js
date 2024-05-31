@@ -30,9 +30,16 @@ export default function useWebRTC(roomID) {
     [LOCAL_VIDEO]: null,
   });
 
+  // useEffect(()=>{
+  //   socket.on(ACTIONS.TEST, ({clients,roomID}) =>{
+  //     console.log(`usewebrtc action test: \nclients ${clients}\nroomID ${roomID}`);
+  //   })
+  // })
+
   useEffect(() => {
     //Функция добавления нового пира при ADD_PEER
     async function handleNewPeer({peerID, createOffer}) {
+      console.log(`test123\npeerID:${peerID}`);
       if (peerID in peerConnections.current) {
         return console.warn(`Already connected to peer ${peerID}`);
       }

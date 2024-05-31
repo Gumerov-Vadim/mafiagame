@@ -22,7 +22,9 @@ export default function Room() {
   const { id: roomID } = useParams();
   const { clients, provideMediaRef, enableCamera, disableCamera } = useWebRTC(roomID);
   const videoLayout = layout(clients.length);
-  console.log(clients);
+  console.log(`Room clients :${clients}`);
+  
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', height: '100vh' }}>
       {clients.map((clientID, index) => (

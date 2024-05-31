@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import ACTIONS from "../../socket/actions";
 import { v4 } from 'uuid';
 import socket from "../../socket";
-import Logout from '../Logout';
+import Navbar from "../../components/Navbar";
 
 export default function Main() {
     const navigate = useNavigate();
@@ -28,7 +28,7 @@ export default function Main() {
             </h1>
             <ul>
                 
-             <Logout />
+             <Navbar/>
                 {rooms.map(roomID => (
                     <li key={roomID}>
                         {roomID}
