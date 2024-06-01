@@ -22,14 +22,10 @@ function layout(clientsNumber = 1) {
 
 export default function Room() {
   const { id: roomID } = useParams();
-  const { clients, provideMediaRef, isModerator, userStates } = useWebRTC(roomID);
+  const { clients, provideMediaRef, isModerator } = useWebRTC(roomID);
   const videoLayout = layout(clients.length);
   console.log(`Room clients :${clients}`);
-  
-  const getUserState = (clientID) => {
-    return userStates[clientID] || { micEnabled: true, cameraEnabled: true };
-  }
-  const toggleMic = (clientID) => {
+    const toggleMic = (clientID) => {
     socket.emit(ACTIONS.MODERATOR_ACTION, { targetClientID: clientID, action: 'toggleMic' });
   };
 
@@ -40,7 +36,7 @@ export default function Room() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', height: '100vh' }}>
       {clients.map((clientID, index) => {
-        const { micEnabled, cameraEnabled } = getUserState(clientID);
+        // const test = false; как можно выключать вебку
         return (
         <div key={clientID} style={videoLayout[index]} id={clientID}>
           <video
@@ -51,14 +47,11 @@ export default function Room() {
             playsInline
             muted={clientID === LOCAL_VIDEO}
             style={{
-              display: cameraEnabled ? 'block' : 'none'
+              // display: test ?'none':'block' как можно выключать вебку
+              displat: 'block'
             }}
           />
-          <div>
-            <p>{micEnabled ? 'Mic On' : 'Mic Off'}</p>
-            <p>{cameraEnabled ? 'Camera On' : 'Camera Off'}</p>
-          </div>
-          {isModerator && clientID !== LOCAL_VIDEO && (
+           {isModerator && clientID !== LOCAL_VIDEO && (
             <div>
               <button onClick={() => toggleMic(clientID)}>Toggle Mic</button>
               <button onClick={() => toggleCamera(clientID)}>Toggle Camera</button>

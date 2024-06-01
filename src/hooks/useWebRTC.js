@@ -3,8 +3,6 @@ import freeice from 'freeice';
 import useStateWithCallback from './useStateWithCallback';
 import socket from '../socket';
 import ACTIONS from '../socket/actions';
-import { act } from 'react';
-
 export const LOCAL_VIDEO = 'LOCAL_VIDEO';
 
 
@@ -12,7 +10,6 @@ export default function useWebRTC(roomID) {
   //Все доступные клиенты
   const [clients, updateClients] = useStateWithCallback([]);
   const [isModerator, setIsModerator] = useState(false);
-  const [userStates, setUserStates] = useState({});
 
   const addNewClient = useCallback((newClient, cb) => {
     updateClients(list => {
@@ -234,36 +231,7 @@ export default function useWebRTC(roomID) {
       socket.off(ACTIONS.MODERATOR_ACTION);
     };
   }, []);
-useEffect(()=>{
-  socket.on(ACTIONS.MODERATOR_ACTION, ({ action, targetClientID }) => {
-    switch (action) {
-      case 'toggleMic':
-        if (targetClientID === socket.id) {
-          console.log(`action:${action}\npeedID:${targetClientID}\nsocket.id:${socket.id}`);
-          localMediaStream.current.getAudioTracks().forEach(track => track.enabled = !track.enabled);
-        }
-        break;
-      case 'toggleCamera':
-        if (targetClientID === socket.id) {
-          console.log(`action:${action}\npeedID:${targetClientID}\nsocket.id:${socket.id}`);
-          localMediaStream.current.getVideoTracks().forEach(track => track.enabled = !track.enabled);
-        }
-        break;
-      default:
-        break;
-    }
   
-    // Update user state
-    setUserStates(prevStates => ({
-      ...prevStates,
-      [targetClientID]: {
-        ...prevStates[targetClientID],
-        micEnabled: action === 'toggleMic' ? !prevStates[targetClientID]?.micEnabled : prevStates[targetClientID]?.micEnabled,
-        cameraEnabled: action === 'toggleCamera' ? !prevStates[targetClientID]?.cameraEnabled : prevStates[targetClientID]?.cameraEnabled,
-      }
-    }));
-  });
-})
   const provideMediaRef = useCallback((id, node) => {
     peerMediaElements.current[id] = node;
   }, []);
@@ -272,8 +240,7 @@ useEffect(()=>{
   return {
     clients,
     provideMediaRef,
-    isModerator,
-    userStates
+    isModerator
   };
 
 }
