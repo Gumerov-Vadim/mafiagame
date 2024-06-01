@@ -1,5 +1,7 @@
 import { useParams } from 'react-router';
 import useWebRTC, { LOCAL_VIDEO } from '../../hooks/useWebRTC';
+import socket from '../../socket';
+const ACTIONS = require('../../socket/actions');
 
 function layout(clientsNumber = 1) {
   const pairs = Array.from({ length: clientsNumber }).reduce((acc, next, index, arr) => {
@@ -20,14 +22,26 @@ function layout(clientsNumber = 1) {
 
 export default function Room() {
   const { id: roomID } = useParams();
-  const { clients, provideMediaRef, enableCamera, disableCamera } = useWebRTC(roomID);
+  const { clients, provideMediaRef, isModerator, userStates } = useWebRTC(roomID);
   const videoLayout = layout(clients.length);
   console.log(`Room clients :${clients}`);
   
+  const getUserState = (clientID) => {
+    return userStates[clientID] || { micEnabled: true, cameraEnabled: true };
+  }
+  const toggleMic = (clientID) => {
+    socket.emit(ACTIONS.MODERATOR_ACTION, { targetClientID: clientID, action: 'toggleMic' });
+  };
+
+  const toggleCamera = (clientID) => {
+    socket.emit(ACTIONS.MODERATOR_ACTION, { targetClientID: clientID, action: 'toggleCamera' });
+  };
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', height: '100vh' }}>
-      {clients.map((clientID, index) => (
+      {clients.map((clientID, index) => {
+        const { micEnabled, cameraEnabled } = getUserState(clientID);
+        return (
         <div key={clientID} style={videoLayout[index]} id={clientID}>
           <video
             width='100%'
@@ -36,13 +50,23 @@ export default function Room() {
             autoPlay
             playsInline
             muted={clientID === LOCAL_VIDEO}
+            style={{
+              display: cameraEnabled ? 'block' : 'none'
+            }}
           />
-            <div style={{ position: 'relative', bottom: '20px', left: '10px' }}>
-              <button onClick={() => enableCamera(clientID)}>Enable</button>
-              <button onClick={() => disableCamera(clientID)}>Disable</button>
+          <div>
+            <p>{micEnabled ? 'Mic On' : 'Mic Off'}</p>
+            <p>{cameraEnabled ? 'Camera On' : 'Camera Off'}</p>
+          </div>
+          {isModerator && clientID !== LOCAL_VIDEO && (
+            <div>
+              <button onClick={() => toggleMic(clientID)}>Toggle Mic</button>
+              <button onClick={() => toggleCamera(clientID)}>Toggle Camera</button>
             </div>
+          )}
         </div>
-      ))}
+      );
+      })}
     </div>
   );
 }

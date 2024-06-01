@@ -21,7 +21,7 @@ function shareRoomsInfo() {
     rooms: getClientRooms()
   })
 }
-
+let roomModerators = {};
 
 io.on('connection', socket => {
 
@@ -64,10 +64,29 @@ io.on('connection', socket => {
 
     //Подключение к комнате
     socket.join(roomID);
+
+      // Assign the first user who joins as the moderator.
+      if (!roomModerators[roomID]) {
+        roomModerators[roomID] = socket.id;
+        socket.emit(ACTIONS.SET_MODERATOR, { isModerator: true });
+      } else {
+        socket.emit(ACTIONS.SET_MODERATOR, { isModerator: false });
+      }
+
     //Делимся информацией о новом состоянии комнат с пользователями
     shareRoomsInfo();
   });
 
+  socket.on(ACTIONS.MODERATOR_ACTION, ({ targetClientID, action }) => {
+    const { rooms } = socket;
+    const roomID = Array.from(rooms).find(roomID => roomModerators[roomID] === socket.id);
+
+    if (!roomID) {
+      return console.warn('Only the moderator can perform this action');
+    }
+    console.log(`action:${action}\ntargetClientID:${targetClientID}`);
+    io.to(targetClientID).emit(ACTIONS.MODERATOR_ACTION, { action, targetClientID});
+  });
   //Функция для выхода из комнаты
   function leaveRoom() {
     console.log("Socket disconnected!");
@@ -94,6 +113,14 @@ io.on('connection', socket => {
           });
         });
 
+        if (roomModerators[roomID] === socket.id) {
+          delete roomModerators[roomID];
+          if (clients.length > 1) {
+            const newModeratorID = clients.find(id => id !== socket.id);
+            roomModerators[roomID] = newModeratorID;
+            io.to(newModeratorID).emit(ACTIONS.SET_MODERATOR, { isModerator: true });
+          }
+        }
         //Покидаем комнату
         socket.leave(roomID);
       });

@@ -1,8 +1,9 @@
-import {useEffect, useRef, useCallback} from 'react';
+import {useEffect, useRef, useCallback, useState} from 'react';
 import freeice from 'freeice';
 import useStateWithCallback from './useStateWithCallback';
 import socket from '../socket';
 import ACTIONS from '../socket/actions';
+import { act } from 'react';
 
 export const LOCAL_VIDEO = 'LOCAL_VIDEO';
 
@@ -10,6 +11,8 @@ export const LOCAL_VIDEO = 'LOCAL_VIDEO';
 export default function useWebRTC(roomID) {
   //Все доступные клиенты
   const [clients, updateClients] = useStateWithCallback([]);
+  const [isModerator, setIsModerator] = useState(false);
+  const [userStates, setUserStates] = useState({});
 
   const addNewClient = useCallback((newClient, cb) => {
     updateClients(list => {
@@ -39,7 +42,6 @@ export default function useWebRTC(roomID) {
   useEffect(() => {
     //Функция добавления нового пира при ADD_PEER
     async function handleNewPeer({peerID, createOffer}) {
-      console.log(`test123\npeerID:${peerID}`);
       if (peerID in peerConnections.current) {
         return console.warn(`Already connected to peer ${peerID}`);
       }
@@ -217,67 +219,51 @@ export default function useWebRTC(roomID) {
     };
   }, [addNewClient,roomID]);
 
-  
-  const enableCamera = useCallback((peerID) => {
-    console.log(`enableCamera peerID:${peerID}`);
-    if (peerID === LOCAL_VIDEO) {
-      localMediaStream.current.getVideoTracks().forEach(track => (track.enabled = true));
-    } else {
-      const videoElement = peerMediaElements.current[peerID];
-      if (videoElement && videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach(track => (track.enabled = true));
-      }
-      socket.emit(ACTIONS.ENABLE_CAMERA, { peerID });
-    }
-  }, []);
-
-  const disableCamera = useCallback((peerID) => {
-    console.log(`disableCamera peerID:${peerID}`);
-    if (peerID === LOCAL_VIDEO) {
-      localMediaStream.current.getVideoTracks().forEach(track => (track.enabled = false));
-    } else {
-      const videoElement = peerMediaElements.current[peerID];
-      if (videoElement && videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach(track => (track.enabled = false));
-      }
-      socket.emit(ACTIONS.DISABLE_CAMERA, { peerID });
-    }
-  }, []);
-
   useEffect(() => {
-    socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
-      console.log(`socket on enableCamera peerID:${peerID}`);
-      const videoElement = peerMediaElements.current[peerID];
-      if (videoElement && videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach(track => (track.enabled = true));
-      }else{
-        const lve = peerMediaElements.current[LOCAL_VIDEO] 
-        if(lve&&lve.srcObject)
-        lve.srcObject.getTracks().forEach(track => (track.enabled = true));
-      }
+    socket.on(ACTIONS.SET_MODERATOR, ({ isModerator }) => {
+      setIsModerator(isModerator);
     });
 
-    socket.on(ACTIONS.DISABLE_CAMERA, ({ peerID }) => {
-      console.log(`socket on disableCamera peerID:${peerID}`);
-      const videoElement = peerMediaElements.current[peerID];
-      if (videoElement && videoElement.srcObject) {
-        videoElement.srcObject.getTracks().forEach(track => (track.enabled = false));
-        console.log("здесь1");
-      }else{
-        const lve = peerMediaElements.current[LOCAL_VIDEO] 
-        if(lve&&lve.srcObject)
-        lve.srcObject.getTracks().forEach(track => (track.enabled = false));
-        console.log("здесь2");
-      }
+    socket.on(ACTIONS.MODERATOR_ACTION, ({ action }) => {
+      // Handle actions for toggling mic, camera, etc.
+      console.log(`Action from moderator: ${action}`);
     });
 
     return () => {
-      socket.off(ACTIONS.ENABLE_CAMERA);
-      socket.off(ACTIONS.DISABLE_CAMERA);
+      socket.off(ACTIONS.SET_MODERATOR);
+      socket.off(ACTIONS.MODERATOR_ACTION);
     };
   }, []);
-
-
+useEffect(()=>{
+  socket.on(ACTIONS.MODERATOR_ACTION, ({ action, targetClientID }) => {
+    switch (action) {
+      case 'toggleMic':
+        if (targetClientID === socket.id) {
+          console.log(`action:${action}\npeedID:${targetClientID}\nsocket.id:${socket.id}`);
+          localMediaStream.current.getAudioTracks().forEach(track => track.enabled = !track.enabled);
+        }
+        break;
+      case 'toggleCamera':
+        if (targetClientID === socket.id) {
+          console.log(`action:${action}\npeedID:${targetClientID}\nsocket.id:${socket.id}`);
+          localMediaStream.current.getVideoTracks().forEach(track => track.enabled = !track.enabled);
+        }
+        break;
+      default:
+        break;
+    }
+  
+    // Update user state
+    setUserStates(prevStates => ({
+      ...prevStates,
+      [targetClientID]: {
+        ...prevStates[targetClientID],
+        micEnabled: action === 'toggleMic' ? !prevStates[targetClientID]?.micEnabled : prevStates[targetClientID]?.micEnabled,
+        cameraEnabled: action === 'toggleCamera' ? !prevStates[targetClientID]?.cameraEnabled : prevStates[targetClientID]?.cameraEnabled,
+      }
+    }));
+  });
+})
   const provideMediaRef = useCallback((id, node) => {
     peerMediaElements.current[id] = node;
   }, []);
@@ -286,8 +272,8 @@ export default function useWebRTC(roomID) {
   return {
     clients,
     provideMediaRef,
-    enableCamera,
-    disableCamera,
+    isModerator,
+    userStates
   };
 
 }

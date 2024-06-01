@@ -9,7 +9,9 @@ const ACTIONS = {
     ICE_CANDIDATE: 'ice-candidate',
     SESSION_DESCRIPTION: 'session-description',
     ENABLE_CAMERA: 'enable-camera',
-    DISABLE_CAMERA: 'disable-camera',
+    DISABLE_CAMERA: 'disable-camera',    
+    SET_MODERATOR: 'set-moderator', // New action
+    MODERATOR_ACTION: 'moderator-action', // New action
     // TEST: 'test'
 };
 
