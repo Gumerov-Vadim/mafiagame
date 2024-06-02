@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/mafiagame/static/css/main.c7ec3132.css",
+    "main.js": "/mafiagame/static/js/main.1026c1b5.js",
+    "index.html": "/mafiagame/index.html",
+    "main.c7ec3132.css.map": "/mafiagame/static/css/main.c7ec3132.css.map",
+    "main.1026c1b5.js.map": "/mafiagame/static/js/main.1026c1b5.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.c7ec3132.css",
+    "static/js/main.1026c1b5.js"
+  ]
+}
