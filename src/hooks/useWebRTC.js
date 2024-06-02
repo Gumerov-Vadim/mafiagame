@@ -216,6 +216,37 @@ export default function useWebRTC(roomID) {
     };
   }, [addNewClient,roomID]);
 
+
+  // Добавляем useEffect для обработки включения/выключения камеры
+  useEffect(() => {
+    const handleModeratorAction = ({ action }) => {
+      if (action === 'toggleCamera') {
+        const videoTrack = localMediaStream.current.getVideoTracks()[0];
+        if (videoTrack) {
+          console.log(`Video track enabled (before): ${videoTrack.enabled}`);
+          videoTrack.enabled = !videoTrack.enabled;
+          console.log(`Video track enabled (after): ${videoTrack.enabled}`);
+
+          // Обновляем RTCPeerConnection для каждого клиента
+          Object.keys(peerConnections.current).forEach(peerID => {
+            const peerConnection = peerConnections.current[peerID];
+            const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+            if (sender) {
+              sender.replaceTrack(videoTrack);
+            }
+          });
+        }
+      }
+    };
+
+    socket.on(ACTIONS.MODERATOR_ACTION, handleModeratorAction);
+
+    return () => {
+      socket.off(ACTIONS.MODERATOR_ACTION, handleModeratorAction);
+    };
+  }, []);
+
+
   useEffect(() => {
     socket.on(ACTIONS.SET_MODERATOR, ({ isModerator }) => {
       setIsModerator(isModerator);
