@@ -12,6 +12,8 @@ const ACTIONS = {
     DISABLE_CAMERA: 'disable-camera',    
     SET_MODERATOR: 'set-moderator', // New action
     MODERATOR_ACTION: 'moderator-action', // New action
+    TOGGLE_MY_MIC: 'toggle-my-mic',
+    TOGGLE_MY_CAM: 'toggle-my-cam'
     // TEST: 'test'
 };
 

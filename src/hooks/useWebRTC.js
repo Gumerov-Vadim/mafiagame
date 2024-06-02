@@ -237,6 +237,24 @@ export default function useWebRTC(roomID) {
           });
         }
       }
+      
+    if (action === 'toggleMic') {
+      const audioTrack = localMediaStream.current.getAudioTracks()[0];
+      if (audioTrack) {
+        console.log(`Audio track enabled (before): ${audioTrack.enabled}`);
+        audioTrack.enabled = !audioTrack.enabled;
+        console.log(`Audio track enabled (after): ${audioTrack.enabled}`);
+  
+        // Обновляем RTCPeerConnection для каждого клиента
+        Object.keys(peerConnections.current).forEach(peerID => {
+          const peerConnection = peerConnections.current[peerID];
+          const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
+          if (sender) {
+            sender.replaceTrack(audioTrack);
+          }
+        });
+      }
+    }
     };
 
     socket.on(ACTIONS.MODERATOR_ACTION, handleModeratorAction);
@@ -246,7 +264,54 @@ export default function useWebRTC(roomID) {
     };
   }, []);
 
+  useEffect(()=>{
+    const handleToggleMyMIC = ()=>{
+      const audioTrack = localMediaStream.current.getVideoTracks()[1];
+      if (audioTrack) {
+        console.log(`Audio track enabled (before): ${audioTrack.enabled}`);
+        audioTrack.enabled = !audioTrack.enabled;
+        console.log(`Audio track enabled (after): ${audioTrack.enabled}`);
 
+        // Обновляем RTCPeerConnection для каждого клиента
+        Object.keys(peerConnections.current).forEach(peerID => {
+          const peerConnection = peerConnections.current[peerID];
+          const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
+          if (sender) {
+            sender.replaceTrack(audioTrack);
+          }
+        });
+      }
+    }
+    socket.on(ACTIONS.TOGGLE_MY_MIC, handleToggleMyMIC);
+    return () => {
+      socket.off(ACTIONS.TOGGLE_MY_MIC, handleToggleMyMIC);
+    };
+  })
+  
+  useEffect(()=>{
+    const handleToggleMyCam = ()=>{
+      const videoTrack = localMediaStream.current.getVideoTracks()[0];
+      if (videoTrack) {
+        console.log(`Video track enabled (before): ${videoTrack.enabled}`);
+        videoTrack.enabled = !videoTrack.enabled;
+        console.log(`Video track enabled (after): ${videoTrack.enabled}`);
+
+        // Обновляем RTCPeerConnection для каждого клиента
+        Object.keys(peerConnections.current).forEach(peerID => {
+          const peerConnection = peerConnections.current[peerID];
+          const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(videoTrack);
+          }
+        });
+      }
+    }
+    socket.on(ACTIONS.TOGGLE_MY_CAM, handleToggleMyCam);
+    return () => {
+      socket.off(ACTIONS.TOGGLE_MY_CAM, handleToggleMyCam);
+    };
+  })
+  
   useEffect(() => {
     socket.on(ACTIONS.SET_MODERATOR, ({ isModerator }) => {
       setIsModerator(isModerator);
