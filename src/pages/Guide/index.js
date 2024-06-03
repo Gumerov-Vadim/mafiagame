@@ -4,7 +4,6 @@ import Navbar from '../../components/Navbar';
 
 export default function Guide() {
   const [gestureRecognizer, setGestureRecognizer] = useState(null);
-  const [runningMode, setRunningMode] = useState("IMAGE");
   const [webcamRunning, setWebcamRunning] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -23,7 +22,7 @@ export default function Guide() {
             modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
             delegate: "GPU"
           },
-          runningMode: runningMode
+          runningMode: "IMAGE"
         });
         setGestureRecognizer(recognizer);
       } catch (error) {
@@ -32,7 +31,7 @@ export default function Guide() {
     };
 
     initializeGestureRecognizer();
-  }, [runningMode]);
+  }, []);
 
   const handleImageClick = async (event) => {
     if (!gestureRecognizer) {
@@ -40,14 +39,7 @@ export default function Guide() {
       return;
     }
 
-    if (runningMode === "VIDEO") {
-      setRunningMode("IMAGE");
-      await gestureRecognizer.setOptions({ runningMode: "IMAGE" });
-    }
-
-    const results = gestureRecognizer.recognize(event.target);
-
-    console.log(`results: ${results}`);
+    const results = await gestureRecognizer.recognize(event.target);
 
     if (results.gestures.length > 0) {
       const p = event.target.parentNode.childNodes[3];
@@ -72,26 +64,25 @@ export default function Guide() {
       const canvasCtx = canvas.getContext("2d");
       const drawingUtils = new DrawingUtils(canvasCtx);
       try {
-      for (const landmarks of results.landmarks) {
-        drawingUtils.drawConnectors(
-          landmarks,
-          GestureRecognizer.HAND_CONNECTIONS,
-          {
-            color: "#00FF00",
-            lineWidth: 5
-          }
-        );
+        for (const landmarks of results.landmarks) {
+          drawingUtils.drawConnectors(
+            landmarks,
+            GestureRecognizer.HAND_CONNECTIONS,
+            {
+              color: "#00FF00",
+              lineWidth: 5
+            }
+          );
 
-        drawingUtils.drawLandmarks(landmarks, {
-          color: "#FF0000",
-          lineWidth: 1
-        });
+          drawingUtils.drawLandmarks(landmarks, {
+            color: "#FF0000",
+            lineWidth: 1
+          });
+        }
+      } catch (e) {
+        console.log(`Error: I can't draw landmarks result: ${e}`);
       }
     }
-  catch(e){
-    console.log(`Error: I cant draw landmarks result: ${e}`);
-  }
-  }
   };
 
   const enableWebcam = () => {
@@ -115,17 +106,12 @@ export default function Guide() {
     };
 
     const predictWebcam = async () => {
-      if (runningMode === "IMAGE") {
-        setRunningMode("VIDEO");
+      if (gestureRecognizer.runningMode !== "VIDEO") {
         await gestureRecognizer.setOptions({ runningMode: "VIDEO" });
       }
 
       let nowInMs = Date.now();
-
-      if (video.currentTime !== lastVideoTime) {
-        lastVideoTime = video.currentTime;
-        results = gestureRecognizer.recognizeForVideo(video, nowInMs);
-      }
+      let results = gestureRecognizer.recognizeForVideo(video, nowInMs);
 
       canvasCtx.save();
       canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
@@ -174,9 +160,6 @@ export default function Guide() {
       }
     };
 
-    let lastVideoTime = -1;
-    let results = undefined;
-
     const constraints = {
       video: true
     };
@@ -193,11 +176,11 @@ export default function Guide() {
     return () => {
       video.removeEventListener("loadeddata", predictWebcam);
     };
-  }, [gestureRecognizer, runningMode, webcamRunning]);
+  }, [gestureRecognizer, webcamRunning]);
 
   return (
     <div>
-    <Navbar/>
+      <Navbar />
       <h1>Recognize hand gestures using the MediaPipe HandGestureRecognizer task</h1>
 
       <section id="demos" className={!gestureRecognizer ? "invisible" : ""}>
@@ -211,17 +194,17 @@ export default function Guide() {
           <p className="classification removed"></p>
         </div>
 
-        <h2><br/>Demo: Webcam continuous hand gesture detection</h2>
-        <p>Use your hand to make gestures in front of the camera to get gesture classification. <br/>Click <b>enable webcam</b> below and grant access to the webcam if prompted.</p>
+        <h2><br />Demo: Webcam continuous hand gesture detection</h2>
+        <p>Use your hand to make gestures in front of the camera to get gesture classification. <br />Click <b>enable webcam</b> below and grant access to the webcam if prompted.</p>
 
         <div id="liveView" className="videoView">
           <button id="webcamButton" className="mdc-button mdc-button--raised" onClick={enableWebcam}>
             <span className="mdc-button__ripple"></span>
             <span className="mdc-button__label">{webcamRunning ? "DISABLE WEBCAM" : "ENABLE WEBCAM"}</span>
           </button>
-          <div style={{position: 'relative'}}>
+          <div style={{ position: 'relative' }}>
             <video ref={videoRef} id="webcam" autoPlay playsInline></video>
-            <canvas ref={canvasRef} className="output_canvas" id="output_canvas" width="1280" height="720" style={{position: 'absolute', left: '0px', top: '0px'}}></canvas>
+            <canvas ref={canvasRef} className="output_canvas" id="output_canvas" width="1280" height="720" style={{ position: 'absolute', left: '0px', top: '0px' }}></canvas>
             <p ref={gestureOutputRef} id='gesture_output' className="output"></p>
           </div>
         </div>
