@@ -1,214 +1,154 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { GestureRecognizer, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
+import React, { useRef, useState, useEffect } from "react";
+import * as tf from "@tensorflow/tfjs";
+import * as handpose from "@tensorflow-models/handpose";
+
+import Webcam from "react-webcam";
+import { drawHand } from "../../utilities";
+
+import {loveYouGesture} from "../../gestures/LoveYou"; 
+
+///////// NEW STUFF IMPORTS
+import * as fp from "fingerpose";
+import victory from "../../images/victory.png";
+import thumbs_up from "../../images/thumbs_up.png";
+///////// NEW STUFF IMPORTS
 import Navbar from '../../components/Navbar';
+import matchers from "@testing-library/jest-dom/matchers";
 
-export default function Guide() {
-  const [gestureRecognizer, setGestureRecognizer] = useState(null);
-  const [webcamRunning, setWebcamRunning] = useState(false);
-  const videoRef = useRef(null);
+export default function Guide() {const webcamRef = useRef(null);
   const canvasRef = useRef(null);
-  const gestureOutputRef = useRef(null);
-  const videoHeight = "360px";
-  const videoWidth = "480px";
 
-  useEffect(() => {
-    const initializeGestureRecognizer = async () => {
-      try {
-        const vision = await FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-        );
-        const recognizer = await GestureRecognizer.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
-            delegate: "GPU"
-          },
-          runningMode: "IMAGE"
-        });
-        setGestureRecognizer(recognizer);
-      } catch (error) {
-        console.error("Failed to initialize gesture recognizer", error);
-      }
-    };
+  ///////// NEW STUFF ADDED STATE HOOK
+  const [emoji, setEmoji] = useState(null);
+  const images = { thumbs_up: thumbs_up, victory: victory };
+  ///////// NEW STUFF ADDED STATE HOOK
 
-    initializeGestureRecognizer();
-  }, []);
-
-  const handleImageClick = async (event) => {
-    if (!gestureRecognizer) {
-      alert("Please wait for gestureRecognizer to load");
-      return;
-    }
-
-    const results = await gestureRecognizer.recognize(event.target);
-
-    if (results.gestures.length > 0) {
-      const p = event.target.parentNode.childNodes[3];
-
-      p.setAttribute("class", "info");
-
-      const categoryName = results.gestures[0][0].categoryName;
-      const categoryScore = parseFloat(results.gestures[0][0].score * 100).toFixed(2);
-      const handedness = results.handednesses[0][0].displayName;
-
-      p.innerText = `GestureRecognizer: ${categoryName}\n Confidence: ${categoryScore}%\n Handedness: ${handedness}`;
-      p.style = `left: 0px; top: ${event.target.height}px; width: ${event.target.width - 10}px;`;
-
-      const canvas = document.createElement("canvas");
-      canvas.setAttribute("class", "canvas");
-      canvas.setAttribute("width", event.target.naturalWidth + "px");
-      canvas.setAttribute("height", event.target.naturalHeight + "px");
-      canvas.style = `left: 0px; top: 0px; width: ${event.target.width}px; height: ${event.target.height}px;`;
-
-      event.target.parentNode.appendChild(canvas);
-
-      const canvasCtx = canvas.getContext("2d");
-      const drawingUtils = new DrawingUtils(canvasCtx);
-      try {
-        for (const landmarks of results.landmarks) {
-          drawingUtils.drawConnectors(
-            landmarks,
-            GestureRecognizer.HAND_CONNECTIONS,
-            {
-              color: "#00FF00",
-              lineWidth: 5
-            }
-          );
-
-          drawingUtils.drawLandmarks(landmarks, {
-            color: "#FF0000",
-            lineWidth: 1
-          });
-        }
-      } catch (e) {
-        console.log(`Error: I can't draw landmarks result: ${e}`);
-      }
-    }
+  const runHandpose = async () => {
+    const net = await handpose.load();
+    console.log("Handpose model loaded.");
+    //  Loop and detect hands
+    setInterval(() => {
+      detect(net);
+    }, 10);
   };
 
-  const enableWebcam = () => {
-    if (!gestureRecognizer) {
-      alert("Please wait for gestureRecognizer to load");
-      return;
-    }
+  const detect = async (net) => {
+    // Check data is available
+    if (
+      typeof webcamRef.current !== "undefined" &&
+      webcamRef.current !== null &&
+      webcamRef.current.video.readyState === 4
+    ) {
+      // Get Video Properties
+      const video = webcamRef.current.video;
+      const videoWidth = webcamRef.current.video.videoWidth;
+      const videoHeight = webcamRef.current.video.videoHeight;
 
-    setWebcamRunning((prev) => !prev);
-  };
+      // Set video width
+      webcamRef.current.video.width = videoWidth;
+      webcamRef.current.video.height = videoHeight;
 
-  useEffect(() => {
-    const video = videoRef.current;
-    const canvasElement = canvasRef.current;
-    const canvasCtx = canvasElement.getContext("2d");
-    const gestureOutput = gestureOutputRef.current;
+      // Set canvas height and width
+      canvasRef.current.width = videoWidth;
+      canvasRef.current.height = videoHeight;
 
-    const handleStream = (stream) => {
-      video.srcObject = stream;
-      video.addEventListener("loadeddata", predictWebcam);
-    };
+      // Make Detections
+      const hand = await net.estimateHands(video);
+      // console.log(hand);
 
-    const predictWebcam = async () => {
-      if (gestureRecognizer.runningMode !== "VIDEO") {
-        await gestureRecognizer.setOptions({ runningMode: "VIDEO" });
-      }
+      ///////// NEW STUFF ADDED GESTURE HANDLING
 
-      let nowInMs = Date.now();
-      let results = gestureRecognizer.recognizeForVideo(video, nowInMs);
+      if (hand.length > 0) {
+        const GE = new fp.GestureEstimator([
+          fp.Gestures.VictoryGesture,
+          fp.Gestures.ThumbsUpGesture,
+          loveYouGesture
+        ]);
+        const gesture = await GE.estimate(hand[0].landmarks, 4);
+        if (gesture.gestures !== undefined && gesture.gestures.length > 0) {
+          console.log(gesture.gestures);
 
-      canvasCtx.save();
-      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-      const drawingUtils = new DrawingUtils(canvasCtx);
+          // const confidence = gesture.gestures.map(
+          //   (prediction) => prediction.confidence
+          // );
+          // const maxConfidence = confidence.indexOf(
+          //   Math.max.apply(null, confidence)
+          // );
+          let findMaxScoreName = (mas) =>{
+            return mas.reduce((max,current)=>{
+              return current.score > max.score?current:max;
+            },{score:-Infinity}).name;
+          };
 
-      canvasElement.style.height = videoHeight;
-      video.style.height = videoHeight;
-      canvasElement.style.width = videoWidth;
-      video.style.width = videoWidth;
-
-      if (results.landmarks) {
-        for (const landmarks of results.landmarks) {
-          drawingUtils.drawConnectors(
-            landmarks,
-            GestureRecognizer.HAND_CONNECTIONS,
-            {
-              color: "#00FF00",
-              lineWidth: 5
-            }
-          );
-
-          drawingUtils.drawLandmarks(landmarks, {
-            color: "#FF0000",
-            lineWidth: 2
-          });
+          // console.log(gesture.gestures[maxConfidence].name);
+          setEmoji(findMaxScoreName(gesture.gestures));
+          console.log(emoji);
         }
       }
 
-      canvasCtx.restore();
+      ///////// NEW STUFF ADDED GESTURE HANDLING
 
-      if (results.gestures.length > 0) {
-        gestureOutput.style.display = "block";
-        gestureOutput.style.width = videoWidth;
-
-        const categoryName = results.gestures[0][0].categoryName;
-        const categoryScore = parseFloat(results.gestures[0][0].score * 100).toFixed(2);
-        const handedness = results.handednesses[0][0].displayName;
-
-        gestureOutput.innerText = `GestureRecognizer: ${categoryName}\n Confidence: ${categoryScore} %\n Handedness: ${handedness}`;
-      } else {
-        gestureOutput.style.display = "none";
-      }
-
-      if (webcamRunning) {
-        window.requestAnimationFrame(predictWebcam);
-      }
-    };
-
-    const constraints = {
-      video: true
-    };
-
-    if (webcamRunning) {
-      navigator.mediaDevices.getUserMedia(constraints)
-        .then(handleStream)
-        .catch((error) => {
-          console.error("Error accessing webcam:", error);
-          alert("Failed to access webcam. Please make sure your webcam is connected and accessible.");
-        });
+      // Draw mesh
+      const ctx = canvasRef.current.getContext("2d");
+      drawHand(hand, ctx);
     }
+  };
 
-    return () => {
-      video.removeEventListener("loadeddata", predictWebcam);
-    };
-  }, [gestureRecognizer, webcamRunning]);
+  useEffect(()=>{runHandpose()},[]);
 
   return (
-    <div>
-      <Navbar />
-      <h1>Recognize hand gestures using the MediaPipe HandGestureRecognizer task</h1>
+    <div className="App">
+      <header className="App-header">
+        <Webcam
+          ref={webcamRef}
+          style={{
+            position: "absolute",
+            marginLeft: "auto",
+            marginRight: "auto",
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            zindex: 9,
+            width: 640,
+            height: 480,
+          }}
+        />
 
-      <section id="demos" className={!gestureRecognizer ? "invisible" : ""}>
-        <h2>Demo: Recognize gestures</h2>
-        <p><em>Click on an image below</em> to identify the gestures in the image.</p>
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: "absolute",
+            marginLeft: "auto",
+            marginRight: "auto",
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            zindex: 9,
+            width: 640,
+            height: 480,
+          }}
+        />
+        {/* NEW STUFF */}
+        {emoji !== null ? (
+          <img
+            src={images[emoji]}
+            style={{
+              position: "absolute",
+              marginLeft: "auto",
+              marginRight: "auto",
+              left: 400,
+              bottom: 500,
+              right: 0,
+              textAlign: "center",
+              height: 100,
+            }}
+          />
+        ) : (
+          ""
+        )}
 
-        <div className="detectOnClick" onClick={handleImageClick}>
-          <p className="classification removed"></p>
-        </div>
-        <div className="detectOnClick" onClick={handleImageClick}>
-          <p className="classification removed"></p>
-        </div>
-
-        <h2><br />Demo: Webcam continuous hand gesture detection</h2>
-        <p>Use your hand to make gestures in front of the camera to get gesture classification. <br />Click <b>enable webcam</b> below and grant access to the webcam if prompted.</p>
-
-        <div id="liveView" className="videoView">
-          <button id="webcamButton" className="mdc-button mdc-button--raised" onClick={enableWebcam}>
-            <span className="mdc-button__ripple"></span>
-            <span className="mdc-button__label">{webcamRunning ? "DISABLE WEBCAM" : "ENABLE WEBCAM"}</span>
-          </button>
-          <div style={{ position: 'relative' }}>
-            <video ref={videoRef} id="webcam" autoPlay playsInline></video>
-            <canvas ref={canvasRef} className="output_canvas" id="output_canvas" width="1280" height="720" style={{ position: 'absolute', left: '0px', top: '0px' }}></canvas>
-            <p ref={gestureOutputRef} id='gesture_output' className="output"></p>
-          </div>
-        </div>
-      </section>
+        {/* NEW STUFF */}
+      </header>
     </div>
   );
 }
