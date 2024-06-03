@@ -47,7 +47,7 @@ export default function Guide() {
 
     const results = gestureRecognizer.recognize(event.target);
 
-    console.log(results);
+    console.log(`results: ${results}`);
 
     if (results.gestures.length > 0) {
       const p = event.target.parentNode.childNodes[3];
@@ -71,7 +71,7 @@ export default function Guide() {
 
       const canvasCtx = canvas.getContext("2d");
       const drawingUtils = new DrawingUtils(canvasCtx);
-
+      try {
       for (const landmarks of results.landmarks) {
         drawingUtils.drawConnectors(
           landmarks,
@@ -88,6 +88,10 @@ export default function Guide() {
         });
       }
     }
+  catch(e){
+    console.log(`Error: I cant draw landmarks result: ${e}`);
+  }
+  }
   };
 
   const enableWebcam = () => {
