@@ -19,8 +19,8 @@ export default function Guide() {const webcamRef = useRef(null);
   const canvasRef = useRef(null);
 
   ///////// NEW STUFF ADDED STATE HOOK
-  const [emoji, setEmoji] = useState(null);
-  const images = { thumbs_up: thumbs_up, victory: victory };
+  const [signName, setSignName] = useState("");
+  const signNamesList = { thumbs_up: "Мирный", victory: "второй", i_love_you: "согласен" };
   ///////// NEW STUFF ADDED STATE HOOK
 
   const runHandpose = async () => {
@@ -60,9 +60,19 @@ export default function Guide() {const webcamRef = useRef(null);
 
       if (hand.length > 0) {
         const GE = new fp.GestureEstimator([
+          first,
           fp.Gestures.VictoryGesture,
+          third,
+          forth,
+          fifth,
           fp.Gestures.ThumbsUpGesture,
-          loveYouGesture
+          loveYouGesture,
+          sheriff,
+          mafia,
+          don,
+          check,
+          talk,
+          thinking,
         ]);
         const gesture = await GE.estimate(hand[0].landmarks, 4);
         if (gesture.gestures !== undefined && gesture.gestures.length > 0) {
@@ -79,10 +89,11 @@ export default function Guide() {const webcamRef = useRef(null);
               return current.score > max.score?current:max;
             },{score:-Infinity}).name;
           };
-
+          const test = findMaxScoreName(gesture.gestures);
+          console.log(`test:${test}`);
           // console.log(gesture.gestures[maxConfidence].name);
-          setEmoji(findMaxScoreName(gesture.gestures));
-          console.log(emoji);
+          setSignName(test);
+          console.log(signName);
         }
       }
 
@@ -128,10 +139,8 @@ export default function Guide() {const webcamRef = useRef(null);
             height: 480,
           }}
         />
-        {/* NEW STUFF */}
-        {emoji !== null ? (
-          <img
-            src={images[emoji]}
+        {/* NEW STUFF */}(
+          <div
             style={{
               position: "absolute",
               marginLeft: "auto",
@@ -142,10 +151,10 @@ export default function Guide() {const webcamRef = useRef(null);
               textAlign: "center",
               height: 100,
             }}
-          />
-        ) : (
-          ""
-        )}
+          >
+            {signNamesList[signName]}
+          </div>
+        )
 
         {/* NEW STUFF */}
       </header>
