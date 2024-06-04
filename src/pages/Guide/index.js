@@ -5,6 +5,7 @@ import Webcam from "react-webcam";
 import { drawHand } from "../../utilities";
 import * as fp from "fingerpose";
 import Navbar from '../../components/Navbar';
+import {loveYouGesture} from "../../gestures/LoveYou"; 
 
 export default function Guide() {
   const webcamRef = useRef(null);
