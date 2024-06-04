@@ -27,7 +27,7 @@ io.on('connection', socket => {
 
   //При подключении делимся со всеми сокета информацией о комнатах.
   console.log("Socket connected!");
-  shareRoomsInfo();
+  setTimeout(shareRoomsInfo, 1000);
   socket.on(ACTIONS.JOIN, config => {
     const {room: roomID} = config; //Получаем комнату из конфига
     // {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { auth } from '../../firebase';
+import { Button } from '../UI';
 
 const Logout = () => {
     const handleLogout = async () => {
@@ -12,7 +13,7 @@ const Logout = () => {
     };
 
     return (
-        <button onClick={handleLogout}>Выйти</button>
+        <Button onClick={handleLogout}>Выйти</Button>
     );
 };
 

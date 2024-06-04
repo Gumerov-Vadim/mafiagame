@@ -60,19 +60,19 @@ export default function Guide() {const webcamRef = useRef(null);
 
       if (hand.length > 0) {
         const GE = new fp.GestureEstimator([
-          first,
-          fp.Gestures.VictoryGesture,
-          third,
-          forth,
-          fifth,
+          // first,
+          // fp.Gestures.VictoryGesture,
+          // third,
+          // forth,
+          // fifth,
           fp.Gestures.ThumbsUpGesture,
-          loveYouGesture,
-          sheriff,
-          mafia,
-          don,
-          check,
-          talk,
-          thinking,
+          // loveYouGesture,
+          // sheriff,
+          // mafia,
+          // don,
+          // check,
+          // talk,
+          // thinking,
         ]);
         const gesture = await GE.estimate(hand[0].landmarks, 4);
         if (gesture.gestures !== undefined && gesture.gestures.length > 0) {
@@ -109,7 +109,6 @@ export default function Guide() {const webcamRef = useRef(null);
 
   return (
     <div className="App">
-      <header className="App-header">
         <Webcam
           ref={webcamRef}
           style={{
@@ -139,25 +138,25 @@ export default function Guide() {const webcamRef = useRef(null);
             height: 480,
           }}
         />
-        {/* NEW STUFF */}(
+        {/* NEW STUFF */}
           <div
-            style={{
-              position: "absolute",
-              marginLeft: "auto",
-              marginRight: "auto",
-              left: 400,
-              bottom: 500,
-              right: 0,
-              textAlign: "center",
-              height: 100,
-            }}
+          className="sign-name"
+            // style={{
+            //   position: "absolute",
+            //   marginLeft: "auto",
+            //   marginRight: "auto",
+            //   left: 400,
+            //   bottom: 500,
+            //   right: 0,
+            //   textAlign: "center",
+            //   height: 100,
+            // }}
           >
             {signNamesList[signName]}
           </div>
-        )
+        
 
         {/* NEW STUFF */}
-      </header>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import ACTIONS from "../../socket/actions";
 import { v4 } from 'uuid';
 import socket from "../../socket";
 import Navbar from "../../components/Navbar";
+import {Button} from '../../components/UI';
 
 export default function Main() {
     const navigate = useNavigate();
@@ -23,28 +24,29 @@ export default function Main() {
 
     return (
         <div ref={rootNode}>
-            <h1>
+                
+             <Navbar/>
+             <h1>
                 Available Rooms
             </h1>
             <ul>
-                
-             <Navbar/>
                 {rooms.map(roomID => (
                     <li key={roomID}>
                         {roomID}
-                        <button onClick={() => {
+                        <Button onClick={() => {
                             navigate(`/room/${roomID}`);
                         }}>
                             JOIN ROOM
-                        </button>
+                        </Button>
                     </li>
                 ))}
             </ul>
-            <button onClick={() => {
+            {console.log(`rooms info:${rooms}`)}
+            <Button onClick={() => {
                 navigate(`/room/${v4()}`);
             }}>
                 Create New Room
-            </button>
+            </Button>
         </div>
     );
 }

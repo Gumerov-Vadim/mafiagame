@@ -2,4 +2,11 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: 'LXGWWenKaiTC-Regular';
+}
+@font-face {
+  font-family: 'LXGWWenKaiTC-Regular';
+  src: local('LXGWWenKaiTC-Regular'),
+    url('./fonts/LXGWWenKaiTC-Regular.ttf') format('truetype');
+  font-weight: regular;
 }
