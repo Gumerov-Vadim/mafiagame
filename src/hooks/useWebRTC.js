@@ -281,6 +281,9 @@ export default function useWebRTC(roomID) {
           }
         });
       }
+      Object.keys(peerConnections.current).forEach(peerID =>{
+        console.log(`test${peerID}: ${peerConnections.current[peerID].getSenders()}\n`);
+      })
     }
     socket.on(ACTIONS.TOGGLE_MY_MIC, handleToggleMyMIC);
     return () => {

@@ -1,6 +1,6 @@
 .custom-button {
     padding: 10px 20px;
-    background-color: #2A4480;
+    background-color: #4671D5;
     color: white;
     border: none;
     border-radius: 4px;
@@ -10,5 +10,5 @@
 }
 
 .custom-button:hover {
-    background-color: #4671D5;
+    background-color: #6C8CD5;
 }

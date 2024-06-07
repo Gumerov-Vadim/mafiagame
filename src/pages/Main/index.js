@@ -23,7 +23,7 @@ export default function Main() {
 
 
     return (
-        <div ref={rootNode}>
+        <div ref={rootNode} style={{backgroundColor: `#06266F`,height:'100%',width:'100%',position:'absolute'}}>
                 
              <Navbar/>
              <h1>

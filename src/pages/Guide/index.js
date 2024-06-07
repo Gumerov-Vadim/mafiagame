@@ -6,12 +6,13 @@ import { drawHand } from "../../utilities";
 import * as fp from "fingerpose";
 import Navbar from '../../components/Navbar';
 import {loveYouGesture} from "../../gestures/LoveYou"; 
+import {first} from "../../gestures/First"; 
 
 export default function Guide() {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
   const [signName, setSignName] = useState("");
-  const signNamesList = { thumbs_up: "Мирный", victory: "второй", i_love_you: "согласен" };
+  const signNamesList = { thumbs_up: "Мирный", victory: "второй", i_love_you: "согласен",first:"первый" };
 
   useEffect(() => {
     const runHandpose = async () => {
@@ -37,7 +38,7 @@ export default function Guide() {
 
           if (hand.length > 0) {
             const GE = new fp.GestureEstimator([
-              // first,
+              first,
               fp.Gestures.VictoryGesture,
               // third,
               // forth,
@@ -72,6 +73,7 @@ export default function Guide() {
 
   return (
     <div className="App">
+      <Navbar/>
       <Webcam
         ref={webcamRef}
         style={{
@@ -101,9 +103,35 @@ export default function Guide() {
           height: 480,
         }}
       />
-      <div className="sign-name">
+      <div style={{
+          position: "absolute",
+          marginLeft: "auto",
+          marginRight: "auto",
+          left: 0,
+          right: 0,
+          textAlign: "center",
+          zindex: 9,
+          width: 640,
+          height: 480,
+          color: 'cyan',
+          fontSize:'32px',
+        }} className="sign-name">
         {signNamesList[signName]}
       </div>
+      <div style={{
+          position: "absolute",
+          marginLeft: "auto",
+          marginRight: "auto",
+          left: 0,
+          right: 0,
+          bottom: '-250px',
+          textAlign: "center",
+          fontSize:'32px',
+          zindex: 9,
+          width: 640,
+          height: 480
+        }}
+        >Попробуй показать жест. Я угадаю!</div>
     </div>
   );
 }

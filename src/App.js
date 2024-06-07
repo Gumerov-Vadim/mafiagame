@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import PrivateRoute from './components/PrivateRoute';
 import AuthProvider from './contexts/AuthContext';
+import Profile from "./pages/Profile";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route exact path='/login' element={<Login />} />
           <Route exact path='/signup' element={<Signup />} />
           <Route exact path='/guide' element={<Guide />} />
+          <Route exact path='/profile' element={<PrivateRoute element={<Profile />} />} />
           <Route exact path='/room/:id' element={<PrivateRoute element={<Room />} />} />
           <Route exact path='/' element={<PrivateRoute element={<Main />} />} />
           <Route path='*' element={<NotFound404 />} />

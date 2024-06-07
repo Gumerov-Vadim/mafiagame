@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { auth } from '../../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import Navbar from '../../components/Navbar';
-
+import {Input, Button} from '../../components/UI'
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -26,21 +26,21 @@ const Login = () => {
         <div>
           <Navbar/>
             <h2>Авторизация</h2>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
             <form onSubmit={handleSubmit}>
-                <input
+                <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
                 />
-                <input
+                <Input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Пароль"
                 />
-                <button type="submit">Войти</button>
+                <Button type="submit">Войти</Button>
+                {error && <p style={{ color: 'red' }}>{error}</p>}
             </form>
         </div>
     );

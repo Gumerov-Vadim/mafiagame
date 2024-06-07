@@ -1,19 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { auth } from '../../firebase';
+import { auth, db } from '../../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { setDoc, doc } from 'firebase/firestore';
 import Navbar from '../../components/Navbar';
-
+import { Button, Input } from '../../components/UI';
 const Signup = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
     const [error, setError] = useState('');
 
     const navigate = useNavigate();
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Store user info in Firestore
+            await setDoc(doc(db, 'user', user.uid), {
+                name,
+                email,
+                status: '' // Initialize status as empty string
+            });
+
             navigate(`/`);
         } catch (error) {
             setError(error.message);
@@ -22,24 +33,30 @@ const Signup = () => {
 
     return (
         <div>
-          <Navbar/>
+            <Navbar />
             <h2>Регистрация</h2>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-           <form onSubmit={handleSubmit}>
-                <input
+            <form onSubmit={handleSubmit}>
+                <Input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Name"
+                />
+                <Input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
                 />
-                <input
+                <Input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Пароль"
                 />
-                <button type="submit">Зарегистрироваться</button>
+                <Button type="submit">Зарегистрироваться</Button>
             </form>
+            {error && <p style={{ color: 'red' }}>{error}</p>}
         </div>
     );
 }

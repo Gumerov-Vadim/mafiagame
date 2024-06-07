@@ -2,6 +2,8 @@ import { useParams } from 'react-router';
 import useWebRTC, { LOCAL_VIDEO } from '../../hooks/useWebRTC';
 import socket from '../../socket';
 import { useState } from 'react';
+import Navbar from '../../components/Navbar';
+import { Button } from '../../components/UI';
 const ACTIONS = require('../../socket/actions');
 
 function layout(clientsNumber = 1) {
@@ -25,7 +27,6 @@ export default function Room() {
   const { id: roomID } = useParams();
   const { clients, provideMediaRef, isModerator } = useWebRTC(roomID);
   const videoLayout = layout(clients.length);
-  console.log(`Room clients :${clients}`);
     const toggleMic = (clientID) => {
     socket.emit(ACTIONS.MODERATOR_ACTION, { targetClientID: clientID, action: 'toggleMic' });
   };
@@ -43,8 +44,10 @@ export default function Room() {
     return clientID === LOCAL_VIDEO;
   }
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', height: '100vh' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', height: '90vh' }}>
+      <Navbar style={{height:'10vh'}}/>
       {clients.map((clientID, index) => {
+        console.log(`clientID:${clientID}\nindex:${index}\n`)
         return (
         <div key={clientID} style={videoLayout[index]} id={clientID}>
           <video
@@ -59,10 +62,10 @@ export default function Room() {
               display: 'block'
             }}
           />
-           {isModerator && clientID !== LOCAL_VIDEO && (
-            <div>
-              <button onClick={() => toggleMic(clientID)}>Toggle Mic</button>
-              <button onClick={() => toggleCamera(clientID)}>Toggle Camera</button>
+          {isModerator && clientID !== LOCAL_VIDEO && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+              <Button onClick={() => toggleMic(clientID)}>Toggle Mic</Button>
+              <Button onClick={() => toggleCamera(clientID)}>Toggle Camera</Button>
             </div>
           )}
         </div>

@@ -118,6 +118,7 @@ io.on('connection', socket => {
           if (clients.length > 1) {
             const newModeratorID = clients.find(id => id !== socket.id);
             roomModerators[roomID] = newModeratorID;
+            console.log(roomModerators[roomID]);
             io.to(newModeratorID).emit(ACTIONS.SET_MODERATOR, { isModerator: true });
           }
         }
