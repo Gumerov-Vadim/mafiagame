@@ -18,7 +18,7 @@
     overflow: hidden;
     height: 33%;
     width: 25%;
-    background-color: #412C84;
+    background-color: rgba(0, 0, 0, 0.5);
     z-index: 1;
   }
   
@@ -74,20 +74,19 @@
     position: absolute;
     z-index: -1;
   }
-  .player-name{
+  .player-info{
+    top:3px;
+    left:5px;
     position: absolute;
     width: 100%;
-  }
-  .player-role{
-    position: absolute;
-    width: 100%;
-    top:20px;
+    display: flex;
+    flex-direction: column;
   }
   p{
     color:#6C8CD5;
   }
   .game-info{
-    background-color: green;
+    background-color: #412C84;
     padding: 15px;
   }
 

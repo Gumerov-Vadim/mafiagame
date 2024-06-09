@@ -69,8 +69,10 @@ export default function Room() {
           // <div key={clientID} style={videoLayout[index]} id={clientID}>
           //сделать посишн релатив и посишн абсолют внутри управления у локал видео участника и у модератора
         <div key={clientID} className={videoLayout()} id={clientID}>
+          <div className='player-info'>
           <p className='player-name'>Игрок 1.Господин Мустафа</p>
           <p className='player-role'>МАФИЯ</p>
+          </div>
           <video
             width='100%'
             height='100%'
@@ -87,14 +89,14 @@ export default function Room() {
             <div className='video-controls'>
                   {isCamAllowed?(
                   <>
-                    <Button className='cam-button'><img src={!isCamEnabled?EnableCamIcon:DisableCamIcon} alt="toggle cam"/></Button>
+                    <Button className='cam-button'><img src={isCamEnabled?EnableCamIcon:DisableCamIcon} alt="toggle cam"/></Button>
                       </>):(<>
                     <Button className='cam-button'><img src={CamIsNotAllowedIcon} alt="Cam is not allowed"/></Button>
                       
                       </>)}
                   {isMicAllowed?(
                   <>
-                    <Button className='mic-button'><img src={!isMicEnabled?UnmuteMicIcon:MuteMicIcon} alt="toggle mic"/></Button>
+                    <Button className='mic-button'><img src={isMicEnabled?UnmuteMicIcon:MuteMicIcon} alt="toggle mic"/></Button>
                       </>):(<>
                     <Button className='mic-button'><img src={MicIsNotAllowedIcon} alt="Mic is not allowed"/></Button>
                       
