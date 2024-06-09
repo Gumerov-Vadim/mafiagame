@@ -4,14 +4,15 @@ import Logout from '../Logout';
 import "./Navbar.css"
 
 
-const Navbar = () => {
+const Navbar = ({children,...props}) => {
     const { user } = useAuth();
 
     return (
-        <nav>
+        <nav {...props}>
             <div className="nav-left">
                 <a href="/">Главная</a>
                 <a href="/guide">Руководство</a>
+                {children}
             </div>
             <div className="nav-right">
                 {user ? (

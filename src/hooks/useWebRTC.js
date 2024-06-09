@@ -3,6 +3,12 @@ import freeice from 'freeice';
 import useStateWithCallback from './useStateWithCallback';
 import socket from '../socket';
 import ACTIONS from '../socket/actions';
+
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { activate } from 'firebase/remote-config';
+
 export const LOCAL_VIDEO = 'LOCAL_VIDEO';
 
 
@@ -10,7 +16,6 @@ export default function useWebRTC(roomID) {
   //Все доступные клиенты
   const [clients, updateClients] = useStateWithCallback([]);
   const [isModerator, setIsModerator] = useState(false);
-
   const addNewClient = useCallback((newClient, cb) => {
     updateClients(list => {
       if (!list.includes(newClient)) {
@@ -30,11 +35,44 @@ export default function useWebRTC(roomID) {
     [LOCAL_VIDEO]: null,
   });
 
+  const playersInfo = useRef({});
+  const { user } = useAuth();
+  const [userData, setUserData] = useState(null);
+  useEffect(() => {
+    const fetchUserData = async () => {
+        if (user) {
+            const docRef = doc(db, 'user', user.uid);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setUserData(data);
+            }
+        }
+    };
+
+    try {
+        fetchUserData();
+      } catch (e) {
+        console.log(`error fetch user data: ${e}`);
+    }
+}, [user]);
+  useEffect(()=>{
+    if(userData){
+      socket.emit(ACTIONS.CLIENT_INFO,{peerid:socket.id,userData}); 
+    }
+  },userData)
+
+
   // useEffect(()=>{
   //   socket.on(ACTIONS.TEST, ({clients,roomID}) =>{
   //     console.log(`usewebrtc action test: \nclients ${clients}\nroomID ${roomID}`);
   //   })
   // })
+
+  //Состояние для включение/выключения микрофона/камеры
+  const [isMicPermByGM,setIsMicPermByGM] = useState(true);
+  const [isCamPermByGM,setCamicPermByGM] = useState(true);
 
   useEffect(() => {
     //Функция добавления нового пира при ADD_PEER
@@ -219,6 +257,7 @@ export default function useWebRTC(roomID) {
 
   // Добавляем useEffect для обработки включения/выключения камеры
   useEffect(() => {
+    
     const handleModeratorAction = ({ action }) => {
       if (action === 'toggleCamera') {
         const videoTrack = localMediaStream.current.getVideoTracks()[0];
@@ -226,7 +265,7 @@ export default function useWebRTC(roomID) {
           console.log(`Video track enabled (before): ${videoTrack.enabled}`);
           videoTrack.enabled = !videoTrack.enabled;
           console.log(`Video track enabled (after): ${videoTrack.enabled}`);
-
+          console.log(`clients:${clients}\nsocket.id${socket.id}`);
           // Обновляем RTCPeerConnection для каждого клиента
           Object.keys(peerConnections.current).forEach(peerID => {
             const peerConnection = peerConnections.current[peerID];
@@ -264,56 +303,56 @@ export default function useWebRTC(roomID) {
     };
   }, []);
 
-  useEffect(()=>{
-    const handleToggleMyMIC = ()=>{
-      const audioTrack = localMediaStream.current.getVideoTracks()[1];
-      if (audioTrack) {
-        console.log(`Audio track enabled (before): ${audioTrack.enabled}`);
-        audioTrack.enabled = !audioTrack.enabled;
-        console.log(`Audio track enabled (after): ${audioTrack.enabled}`);
+  // useEffect(()=>{
+  //   const handleToggleMyMIC = ()=>{
+  //     const audioTrack = localMediaStream.current.getVideoTracks()[1];
+  //     if (audioTrack) {
+  //       console.log(`Audio track enabled (before): ${audioTrack.enabled}`);
+  //       audioTrack.enabled = !audioTrack.enabled;
+  //       console.log(`Audio track enabled (after): ${audioTrack.enabled}`);
 
-        // Обновляем RTCPeerConnection для каждого клиента
-        Object.keys(peerConnections.current).forEach(peerID => {
-          const peerConnection = peerConnections.current[peerID];
-          const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
-          if (sender) {
-            sender.replaceTrack(audioTrack);
-          }
-        });
-      }
-      Object.keys(peerConnections.current).forEach(peerID =>{
-        console.log(`test${peerID}: ${peerConnections.current[peerID].getSenders()}\n`);
-      })
-    }
-    socket.on(ACTIONS.TOGGLE_MY_MIC, handleToggleMyMIC);
-    return () => {
-      socket.off(ACTIONS.TOGGLE_MY_MIC, handleToggleMyMIC);
-    };
-  })
+  //       // Обновляем RTCPeerConnection для каждого клиента
+  //       Object.keys(peerConnections.current).forEach(peerID => {
+  //         const peerConnection = peerConnections.current[peerID];
+  //         const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
+  //         if (sender) {
+  //           sender.replaceTrack(audioTrack);
+  //         }
+  //       });
+  //     }
+  //     Object.keys(peerConnections.current).forEach(peerID =>{
+  //       console.log(`test${peerID}: ${peerConnections.current[peerID].getSenders()}\n`);
+  //     })
+  //   }
+  //   socket.on(ACTIONS.TOGGLE_MY_MIC, handleToggleMyMIC);
+  //   return () => {
+  //     socket.off(ACTIONS.TOGGLE_MY_MIC, handleToggleMyMIC);
+  //   };
+  // })
   
-  useEffect(()=>{
-    const handleToggleMyCam = ()=>{
-      const videoTrack = localMediaStream.current.getVideoTracks()[0];
-      if (videoTrack) {
-        console.log(`Video track enabled (before): ${videoTrack.enabled}`);
-        videoTrack.enabled = !videoTrack.enabled;
-        console.log(`Video track enabled (after): ${videoTrack.enabled}`);
+  // useEffect(()=>{
+  //   const handleToggleMyCam = ()=>{
+  //     const videoTrack = localMediaStream.current.getVideoTracks()[0];
+  //     if (videoTrack) {
+  //       console.log(`Video track enabled (before): ${videoTrack.enabled}`);
+  //       videoTrack.enabled = !videoTrack.enabled;
+  //       console.log(`Video track enabled (after): ${videoTrack.enabled}`);
 
-        // Обновляем RTCPeerConnection для каждого клиента
-        Object.keys(peerConnections.current).forEach(peerID => {
-          const peerConnection = peerConnections.current[peerID];
-          const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
-          if (sender) {
-            sender.replaceTrack(videoTrack);
-          }
-        });
-      }
-    }
-    socket.on(ACTIONS.TOGGLE_MY_CAM, handleToggleMyCam);
-    return () => {
-      socket.off(ACTIONS.TOGGLE_MY_CAM, handleToggleMyCam);
-    };
-  })
+  //       // Обновляем RTCPeerConnection для каждого клиента
+  //       Object.keys(peerConnections.current).forEach(peerID => {
+  //         const peerConnection = peerConnections.current[peerID];
+  //         const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+  //         if (sender) {
+  //           sender.replaceTrack(videoTrack);
+  //         }
+  //       });
+  //     }
+  //   }
+  //   socket.on(ACTIONS.TOGGLE_MY_CAM, handleToggleMyCam);
+  //   return () => {
+  //     socket.off(ACTIONS.TOGGLE_MY_CAM, handleToggleMyCam);
+  //   };
+  // })
   
   useEffect(() => {
     socket.on(ACTIONS.SET_MODERATOR, ({ isModerator }) => {
@@ -335,7 +374,7 @@ export default function useWebRTC(roomID) {
     peerMediaElements.current[id] = node;
   }, []);
 
-  
+  //test
   return {
     clients,
     provideMediaRef,

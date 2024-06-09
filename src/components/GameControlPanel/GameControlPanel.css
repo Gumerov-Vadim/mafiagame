@@ -1,0 +1,29 @@
+.toggle-visibility {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 10px;
+  padding: 0;
+}
+
+.toggle-visibility img {
+  width: 24px;
+  height: 24px;
+}
+
+.buttons button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin: 0 10px;
+  padding: 0;
+}
+
+.buttons button img {
+  width: 24px;
+  height: 24px;
+}
+
+.buttons button:hover img {
+  filter: brightness(0.8);
+}

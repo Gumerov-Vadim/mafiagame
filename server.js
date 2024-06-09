@@ -22,6 +22,7 @@ function shareRoomsInfo() {
   })
 }
 let roomModerators = {};
+let usersData = {}
 
 io.on('connection', socket => {
 
@@ -150,7 +151,29 @@ io.on('connection', socket => {
       iceCandidate, //ICE
     });
   });
-
+  socket.on(ACTIONS.CLIENT_INFO,({peerid,userData})=>{
+    // Проверка, существует ли email
+    let emailExists = false;
+  
+    for (let key in usersData) {
+      if (usersData[key].email === userData.email) {
+        emailExists = true;
+        break;
+      }
+    }
+  
+    if (!emailExists) {
+      // Если email не найден, добавляем новую запись
+      usersData[peerid] = userData;
+      console.log('New user added:', usersData);
+    } else {
+      console.log(`\nTO DO!\nобработать повторное подключение пользователя, который уже зашёл!\n`);
+      console.log('\nusersData:', usersData);
+      //TO DO
+      //обработать повторное подключение пользователя, который уже зашёл
+      //https://upgraide.me/chat?id=330a3c31-25b8-11ef-b1f4-0242c0a8800d
+    }  
+  })
   socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
     io.emit(ACTIONS.ENABLE_CAMERA, { peerID });
   });

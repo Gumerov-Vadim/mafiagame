@@ -50,3 +50,4 @@ export default function Main() {
         </div>
     );
 }
+{/* <a target="_blank" href="https://icons8.com/icon/eaQh9NFNoyZJ/pause">Пауза</a> иконка от <a target="_blank" href="https://icons8.com">Icons8</a> */}
