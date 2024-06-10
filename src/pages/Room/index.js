@@ -17,12 +17,15 @@ const ACTIONS = require('../../socket/actions');
 
 export default function Room() {
   const { id: roomID } = useParams();
-  const { clients, provideMediaRef, isModerator, playersInfo } = useWebRTC(roomID);
-  
-  const [isCamAllowed,setIsCamAllowed] = useState(true);
-  const [isMicAllowed,setIsMicAllowed] = useState(true);
-  const [isCamEnabled,setIsCamEnabled] = useState(true);
-  const [isMicEnabled,setIsMicEnabled] = useState(true);
+  const { clients, provideMediaRef, toggleMic,toggleCam,MAtoggleMic,MAtoggleCam,
+    handlePause,handleContinue,handleRestart,handleEndGame,
+     isModerator, playersInfo,
+     isCamAllowed,
+     isMicAllowed,
+     isCamEnabled,
+     isMicEnabled
+    } = useWebRTC(roomID);
+  const [testVideo,setTestVideo] = useState(true);
   const test = (index)=>{
     return index%2===1?'test1':'test2';
   }
@@ -33,36 +36,19 @@ export default function Room() {
     return defaultClassName+testClassName;
   }
 
-  const handlePause = () => {
-    // Логика обработки паузы в родительском компоненте
-    console.log('Pause event from GameControlPanel');
-  };
-
-  const handleContinue = () => {
-    // Логика обработки продолжения в родительском компоненте
-    console.log('Continue event from GameControlPanel');
-  };
-
-  const handleRestart = () => {
-    // Логика обработки рестарта в родительском компоненте
-    console.log('Restart event from GameControlPanel');
-  };
-
-  const handleEndGame = () => {
-    // Логика обработки завершения игры в родительском компоненте
-    console.log('End game event from GameControlPanel');
-  };
 
   
-  return (
+  return testVideo?(
     <div>
       <Navbar/>
+      {isModerator&&(
       <GameControlPanel className='gc-panel'
         onPause={handlePause}
         onContinue={handleContinue}
         onRestart={handleRestart}
         onEndGame={handleEndGame}
         />
+        )}
       <div className='container'>
       {clients.map((clientID, index) => {
         return (
@@ -85,21 +71,20 @@ export default function Room() {
               display: 'block'
             }}
           />
-          {isModerator && clientID !== LOCAL_VIDEO && (
+          {(isModerator||clientID === LOCAL_VIDEO) && (
             <div className='video-controls'>
                   {isCamAllowed?(
                   <>
-                    <Button className='cam-button'><img src={isCamEnabled?EnableCamIcon:DisableCamIcon} alt="toggle cam"/></Button>
+                    <Button className='cam-button' onClick={clientID===LOCAL_VIDEO?toggleCam:()=>{MAtoggleCam(clientID)}}><img src={isCamEnabled?EnableCamIcon:DisableCamIcon} alt="toggle cam"/></Button>
                       </>):(<>
-                    <Button className='cam-button'><img src={CamIsNotAllowedIcon} alt="Cam is not allowed"/></Button>
+                    <Button className='cam-button' onClick={clientID===LOCAL_VIDEO?toggleCam:()=>{MAtoggleCam(clientID)}}><img src={CamIsNotAllowedIcon} alt="Cam is not allowed"/></Button>
                       
                       </>)}
                   {isMicAllowed?(
                   <>
-                    <Button className='mic-button'><img src={isMicEnabled?UnmuteMicIcon:MuteMicIcon} alt="toggle mic"/></Button>
+                    <Button className='mic-button' onClick={clientID===LOCAL_VIDEO?toggleMic:()=>{MAtoggleMic(clientID)}}><img src={isMicEnabled?UnmuteMicIcon:MuteMicIcon} alt="toggle mic"/></Button>
                       </>):(<>
-                    <Button className='mic-button'><img src={MicIsNotAllowedIcon} alt="Mic is not allowed"/></Button>
-                      
+                    <Button className='mic-button' onClick={clientID===LOCAL_VIDEO?toggleMic:()=>{MAtoggleMic(clientID)}}><img src={MicIsNotAllowedIcon} alt="Mic is not allowed"/></Button>
                       </>)}
             </div>
           )}
@@ -123,5 +108,7 @@ export default function Room() {
 
     </div>
     </div>
+  ):(
+    <div>test video</div>
   );
 }

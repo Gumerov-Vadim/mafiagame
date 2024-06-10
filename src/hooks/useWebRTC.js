@@ -21,7 +21,6 @@ export default function useWebRTC(roomID) {
       if (!list.includes(newClient)) {
         return [...list, newClient]
       }
-
       return list;
     }, cb);
   }, [updateClients]);
@@ -59,7 +58,11 @@ export default function useWebRTC(roomID) {
 }, [user]);
   useEffect(()=>{
     if(userData){
-      socket.emit(ACTIONS.CLIENT_INFO,{peerid:socket.id,userData}); 
+      socket.emit(ACTIONS.CLIENT_INFO,
+        {
+          peerid:socket.id,
+          userData,
+        }); 
     }
   },userData)
 
@@ -70,9 +73,6 @@ export default function useWebRTC(roomID) {
   //   })
   // })
 
-  //Состояние для включение/выключения микрофона/камеры
-  const [isMicPermByGM,setIsMicPermByGM] = useState(true);
-  const [isCamPermByGM,setCamicPermByGM] = useState(true);
 
   useEffect(() => {
     //Функция добавления нового пира при ADD_PEER
@@ -254,37 +254,42 @@ export default function useWebRTC(roomID) {
     };
   }, [addNewClient,roomID]);
 
+  
+  
+  const [isCamAllowed,setIsCamAllowed] = useState(true);
+  const [isMicAllowed,setIsMicAllowed] = useState(true);
+  const [isCamEnabled,setIsCamEnabled] = useState(true);
+  const [isMicEnabled,setIsMicEnabled] = useState(true);
+  const [isCamPermitted,setIsCamPermitted] = useState(true);
+  const [isMicPermitted,setIsMicPermitted] = useState(true);
 
-  // Добавляем useEffect для обработки включения/выключения камеры
-  useEffect(() => {
-    
-    const handleModeratorAction = ({ action }) => {
-      if (action === 'toggleCamera') {
-        const videoTrack = localMediaStream.current.getVideoTracks()[0];
-        if (videoTrack) {
-          console.log(`Video track enabled (before): ${videoTrack.enabled}`);
-          videoTrack.enabled = !videoTrack.enabled;
-          console.log(`Video track enabled (after): ${videoTrack.enabled}`);
-          console.log(`clients:${clients}\nsocket.id${socket.id}`);
-          // Обновляем RTCPeerConnection для каждого клиента
-          Object.keys(peerConnections.current).forEach(peerID => {
-            const peerConnection = peerConnections.current[peerID];
-            const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
-            if (sender) {
-              sender.replaceTrack(videoTrack);
-            }
-          });
-        }
+  // useEffect(()=>{
+  //   userData.Cam.isCamAllowed = isCamAllowed;
+  //   userData.Cam.isCamEnabled = isCamEnabled;
+  //   userData.Cam.isCamPermitted = isCamPermitted;
+  //   userData.Mic.isCamAllowed = isMicAllowed;
+  //   userData.Mic.isCamEnabled = isMicEnabled;
+  //   userData.Mic.isCamPermitted = isMicPermitted;
+  // },[isCamAllowed,isMicAllowed,isCamEnabled,isCamPermitted,isMicPermitted]);
+
+  // Добавляем useEffect для обработки включения/выключения камеры/микрофона
+    const disableMyCamToAll = () =>{
+      const videoTrack = localMediaStream.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = false;
+        Object.keys(peerConnections.current).forEach(peerID => {
+          const peerConnection = peerConnections.current[peerID];
+          const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(videoTrack);
+          }
+        });
       }
-      
-    if (action === 'toggleMic') {
+    }
+    const  disableMyMicToAll = () =>{
       const audioTrack = localMediaStream.current.getAudioTracks()[0];
       if (audioTrack) {
-        console.log(`Audio track enabled (before): ${audioTrack.enabled}`);
-        audioTrack.enabled = !audioTrack.enabled;
-        console.log(`Audio track enabled (after): ${audioTrack.enabled}`);
-  
-        // Обновляем RTCPeerConnection для каждого клиента
+        audioTrack.enabled = false;
         Object.keys(peerConnections.current).forEach(peerID => {
           const peerConnection = peerConnections.current[peerID];
           const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
@@ -294,66 +299,97 @@ export default function useWebRTC(roomID) {
         });
       }
     }
-    };
 
-    socket.on(ACTIONS.MODERATOR_ACTION, handleModeratorAction);
+    const enableMyCamToAll = () =>{
+      const videoTrack = localMediaStream.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = true;
+        Object.keys(peerConnections.current).forEach(peerID => {
+          const peerConnection = peerConnections.current[peerID];
+          const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(videoTrack);
+          }
+        });
+      }
+    }
+    const enableMyMicToAll = () =>{
+      const audioTrack = localMediaStream.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = true;
+        Object.keys(peerConnections.current).forEach(peerID => {
+          const peerConnection = peerConnections.current[peerID];
+          const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
+          if (sender) {
+            sender.replaceTrack(audioTrack);
+          }
+        });
+      }
+    }
 
-    return () => {
-      socket.off(ACTIONS.MODERATOR_ACTION, handleModeratorAction);
-    };
-  }, []);
+    const disableMyCamToSingle = (peerID) =>{
+      const videoTrack = localMediaStream.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = false;
+          const peerConnection = peerConnections.current[peerID];
+          const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(videoTrack);
+          }
+      }
+    }
+    const  disableMyMicToSingle = (peerID) =>{
+      const audioTrack = localMediaStream.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = false;
+          const peerConnection = peerConnections.current[peerID];
+          const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
+          if (sender) {
+            sender.replaceTrack(audioTrack);
+          }
+      }
+    }
 
-  // useEffect(()=>{
-  //   const handleToggleMyMIC = ()=>{
-  //     const audioTrack = localMediaStream.current.getVideoTracks()[1];
-  //     if (audioTrack) {
-  //       console.log(`Audio track enabled (before): ${audioTrack.enabled}`);
-  //       audioTrack.enabled = !audioTrack.enabled;
-  //       console.log(`Audio track enabled (after): ${audioTrack.enabled}`);
+    const enableMyCamToSingle = (peerID) =>{
+      const videoTrack = localMediaStream.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = true;
+          const peerConnection = peerConnections.current[peerID];
+          const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(videoTrack);
+          }
+      }
+    }
+    const enableMyMicToSingle = (peerID) =>{
+      const audioTrack = localMediaStream.current.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = true;
+          const peerConnection = peerConnections.current[peerID];
+          const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
+          if (sender) {
+            sender.replaceTrack(audioTrack);
+          }
+      }      
+    }
 
-  //       // Обновляем RTCPeerConnection для каждого клиента
-  //       Object.keys(peerConnections.current).forEach(peerID => {
-  //         const peerConnection = peerConnections.current[peerID];
-  //         const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
-  //         if (sender) {
-  //           sender.replaceTrack(audioTrack);
-  //         }
-  //       });
-  //     }
-  //     Object.keys(peerConnections.current).forEach(peerID =>{
-  //       console.log(`test${peerID}: ${peerConnections.current[peerID].getSenders()}\n`);
-  //     })
-  //   }
-  //   socket.on(ACTIONS.TOGGLE_MY_MIC, handleToggleMyMIC);
-  //   return () => {
-  //     socket.off(ACTIONS.TOGGLE_MY_MIC, handleToggleMyMIC);
-  //   };
-  // })
+    
+  const moderatorChangedMicAllow = useCallback(()=>{
+    if(isMicAllowed){
+      disableMyMicToAll();
+      setIsMicEnabled(false);
+    }
+    setIsMicAllowed(prev=>!prev);    
+  },[isMicAllowed]);
   
-  // useEffect(()=>{
-  //   const handleToggleMyCam = ()=>{
-  //     const videoTrack = localMediaStream.current.getVideoTracks()[0];
-  //     if (videoTrack) {
-  //       console.log(`Video track enabled (before): ${videoTrack.enabled}`);
-  //       videoTrack.enabled = !videoTrack.enabled;
-  //       console.log(`Video track enabled (after): ${videoTrack.enabled}`);
+  const moderatorChangedCamAllow = useCallback(()=>{
+    if(isCamAllowed){
+      disableMyCamToAll();
+      setIsCamEnabled(false);
+    }
+    setIsCamAllowed(prev=>!prev);    
+  },[isCamAllowed]);
 
-  //       // Обновляем RTCPeerConnection для каждого клиента
-  //       Object.keys(peerConnections.current).forEach(peerID => {
-  //         const peerConnection = peerConnections.current[peerID];
-  //         const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
-  //         if (sender) {
-  //           sender.replaceTrack(videoTrack);
-  //         }
-  //       });
-  //     }
-  //   }
-  //   socket.on(ACTIONS.TOGGLE_MY_CAM, handleToggleMyCam);
-  //   return () => {
-  //     socket.off(ACTIONS.TOGGLE_MY_CAM, handleToggleMyCam);
-  //   };
-  // })
-  
   useEffect(() => {
     socket.on(ACTIONS.SET_MODERATOR, ({ isModerator }) => {
       setIsModerator(isModerator);
@@ -362,6 +398,12 @@ export default function useWebRTC(roomID) {
     socket.on(ACTIONS.MODERATOR_ACTION, ({ action }) => {
       // Handle actions for toggling mic, camera, etc.
       console.log(`Action from moderator: ${action}`);
+      if(action===ACTIONS.MA.CHANGE_PLAYER_CAM_ALLOW){
+        moderatorChangedCamAllow()
+      }
+      if(action===ACTIONS.MA.CHANGE_PLAYER_MIC_ALLOW){
+        moderatorChangedMicAllow();
+      }
     });
 
     return () => {
@@ -370,15 +412,60 @@ export default function useWebRTC(roomID) {
     };
   }, []);
   
+  const MAtoggleMic = useCallback((peerID)=>{
+    socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:peerID,action: ACTIONS.MA.CHANGE_PLAYER_MIC_ALLOW} )
+},[])
+
+  const MAtoggleCam = useCallback((peerID)=>{
+    socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:peerID,action: ACTIONS.MA.CHANGE_PLAYER_CAM_ALLOW} )
+  },[])
+
+  const handlePause = useCallback(()=>{
+    socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action: ACTIONS.MA.PAUSE_GAME} )
+  },[])
+  const handleContinue = useCallback(()=>{
+    socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action: ACTIONS.MA.RESUME_GAME} )
+  },[])
+  const handleRestart = useCallback(()=>{
+    socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action: ACTIONS.MA.RESTART_GAME} )
+  },[])
+  const handleEndGame = useCallback(()=>{
+    socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action: ACTIONS.MA.FINISH_GAME} )
+  },[])
+
+  const toggleMic = useCallback(()=>{
+    if(!isMicEnabled&&isMicAllowed&&isMicPermitted){
+      enableMyMicToAll()
+    }
+    isMicEnabled&&disableMyMicToAll();
+    setIsMicEnabled(prev=>!prev);    
+  },[isMicEnabled,isMicAllowed,isMicPermitted]);
+  
+  const toggleCam = useCallback(()=>{
+    if(!isCamEnabled&&isCamAllowed&&isCamPermitted){
+      enableMyCamToAll();
+    }
+    isCamEnabled&&disableMyCamToAll();
+    setIsCamEnabled(prev=>!prev);    
+  },[isCamEnabled,isCamAllowed,isCamPermitted]);
+
+
   const provideMediaRef = useCallback((id, node) => {
     peerMediaElements.current[id] = node;
-  }, []);
+  }, [peerMediaElements]);
 
   //test
   return {
     clients,
     provideMediaRef,
-    isModerator
+    toggleMic,toggleCam,
+    MAtoggleMic,MAtoggleCam,
+    handlePause,handleContinue,handleRestart,handleEndGame,
+    isModerator,
+    isCamAllowed,
+    isMicAllowed,
+    isCamEnabled,
+    isMicEnabled,
   };
 
 }

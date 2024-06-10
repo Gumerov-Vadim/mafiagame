@@ -85,8 +85,16 @@ io.on('connection', socket => {
     if (!roomID) {
       return console.warn('Only the moderator can perform this action');
     }
-    console.log(`action:${action}\ntargetClientID:${targetClientID}`);
-    io.to(targetClientID).emit(ACTIONS.MODERATOR_ACTION, { action, targetClientID});
+    if(targetClientID==='all'){
+      //Получаем всех клиентов из этой комнаты
+      const clients = Array.from(io.sockets.adapter.rooms.get(roomID) || []);
+      clients.forEach(clientID=>{
+        io.to(clientID).emit(ACTIONS.MODERATOR_ACTION, {action});
+      })
+    }
+    else{
+    io.to(targetClientID).emit(ACTIONS.MODERATOR_ACTION, { action });
+    }
   });
   //Функция для выхода из комнаты
   function leaveRoom() {

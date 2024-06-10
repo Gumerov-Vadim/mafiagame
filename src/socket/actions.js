@@ -10,28 +10,25 @@ const ACTIONS = {
     SESSION_DESCRIPTION: 'session-description',    
     SET_MODERATOR: 'set-moderator', // New action
     //действия для модератора
-    MODERATOR_ACTION: 
+    MODERATOR_ACTION: 'moderator-action',
+    MA: 
     {
-        MUTE_PLAYER:'ma-mute-player',
-        UNMUTE_PLAYER:'ma-unmute-player',
-        DISABLE_PLAYER_CAMERA:'ma-disable-player-camera',
-        ENABLE_PLAYER_CAMERA:'ma-enable-player-camera',
+        CHANGE_PLAYER_MIC_ALLOW:'ma-change-player-mic-allow',
+        CHANGE_PLAYER_CAM_ALLOW:'ma-change-player-cam-allow',
         SKIP_TURN:'ma-skip-turn',
         ASSIGN_PLAYER_TURN: 'ma-assign-player-turn',
         PAUSE_GAME:'ma-pause-game',
+        RESUME_GAME:'ma-resume-game',
         RESTART_GAME:'ma-restart-game',
         FINISH_GAME:'ma-finish-game',
     }, 
     // действия игроков 
     PLAYERS_ACTION:{
-    TOGGLE_MY_MIC: 'toggle-my-mic',
-    TOGGLE_MY_CAM: 'toggle-my-cam',
     VOTE:'vote',
     SHERIFF_CHECK:'sheriff-check',
     DON_CHECK:'don-check',
     MAFIA_SHOT:'mafia-shot'},
     KICK:'kick',
-
     CLIENT_INFO: 'client-info'
     // TEST: 'test'
 };
