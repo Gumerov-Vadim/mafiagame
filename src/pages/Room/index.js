@@ -73,19 +73,8 @@ export default function Room() {
           />
           {(isModerator||clientID === LOCAL_VIDEO) && (
             <div className='video-controls'>
-                  {isCamAllowed?(
-                  <>
-                    <Button className='cam-button' onClick={clientID===LOCAL_VIDEO?toggleCam:()=>{MAtoggleCam(clientID)}}><img src={isCamEnabled?EnableCamIcon:DisableCamIcon} alt="toggle cam"/></Button>
-                      </>):(<>
-                    <Button className='cam-button' onClick={clientID===LOCAL_VIDEO?toggleCam:()=>{MAtoggleCam(clientID)}}><img src={CamIsNotAllowedIcon} alt="Cam is not allowed"/></Button>
-                      
-                      </>)}
-                  {isMicAllowed?(
-                  <>
-                    <Button className='mic-button' onClick={clientID===LOCAL_VIDEO?toggleMic:()=>{MAtoggleMic(clientID)}}><img src={isMicEnabled?UnmuteMicIcon:MuteMicIcon} alt="toggle mic"/></Button>
-                      </>):(<>
-                    <Button className='mic-button' onClick={clientID===LOCAL_VIDEO?toggleMic:()=>{MAtoggleMic(clientID)}}><img src={MicIsNotAllowedIcon} alt="Mic is not allowed"/></Button>
-                      </>)}
+                    <Button className='cam-button' onClick={clientID===LOCAL_VIDEO?toggleCam:()=>{MAtoggleCam(clientID)}}><img src={isCamAllowed?isCamEnabled?EnableCamIcon:DisableCamIcon:CamIsNotAllowedIcon} alt="toggle cam"/></Button>
+                    <Button className='mic-button' onClick={clientID===LOCAL_VIDEO?toggleMic:()=>{MAtoggleMic(clientID)}}><img src={isMicAllowed?isMicEnabled?UnmuteMicIcon:MuteMicIcon:MicIsNotAllowedIcon} alt="toggle mic"/></Button>
             </div>
           )}
         </div>

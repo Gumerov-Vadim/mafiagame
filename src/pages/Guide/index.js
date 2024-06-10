@@ -68,7 +68,6 @@ export default function Guide() {
       return () => clearInterval(interval);
     };
 
-    runHandpose();
   }, []);
 
   return (
