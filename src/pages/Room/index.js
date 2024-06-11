@@ -1,7 +1,7 @@
 import { useParams } from 'react-router';
 import useWebRTC, { LOCAL_VIDEO } from '../../hooks/useWebRTC';
 import socket from '../../socket';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { Button } from '../../components/UI';
 import './Room.css';
@@ -35,8 +35,23 @@ export default function Room() {
     const testClassName = ' test'
     return defaultClassName+testClassName;
   }
-
-
+  // //Эксперимент
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     setTestVideo(prev => !prev);
+  //     console.log(`test video now: ${testVideo}`);
+  //   }, 3000);
+  //   return () => clearInterval(interval);
+  // }, [testVideo, setTestVideo]);
+  const getCamIcon = () => {
+    if (!isCamAllowed) return CamIsNotAllowedIcon;
+    return isCamEnabled ? EnableCamIcon : DisableCamIcon;
+  };
+  
+  const getMicIcon = () => {
+    if (!isMicAllowed) return MicIsNotAllowedIcon;
+    return isMicEnabled ? UnmuteMicIcon : MuteMicIcon;
+  };
   
   return testVideo?(
     <div>
@@ -71,10 +86,14 @@ export default function Room() {
               display: 'block'
             }}
           />
-          {(isModerator||clientID === LOCAL_VIDEO) && (
+          {(isModerator || clientID === LOCAL_VIDEO) && (
             <div className='video-controls'>
-                    <Button className='cam-button' onClick={clientID===LOCAL_VIDEO?toggleCam:()=>{MAtoggleCam(clientID)}}><img src={isCamAllowed?isCamEnabled?EnableCamIcon:DisableCamIcon:CamIsNotAllowedIcon} alt="toggle cam"/></Button>
-                    <Button className='mic-button' onClick={clientID===LOCAL_VIDEO?toggleMic:()=>{MAtoggleMic(clientID)}}><img src={isMicAllowed?isMicEnabled?UnmuteMicIcon:MuteMicIcon:MicIsNotAllowedIcon} alt="toggle mic"/></Button>
+              <Button className='cam-button' onClick={clientID === LOCAL_VIDEO ? toggleCam : () => MAtoggleCam(clientID)}>
+                <img src={getCamIcon()} alt="toggle cam"/>
+              </Button>
+              <Button className='mic-button' onClick={clientID === LOCAL_VIDEO ? toggleMic : () => MAtoggleMic(clientID)}>
+                <img src={getMicIcon()} alt="toggle mic"/>
+              </Button>
             </div>
           )}
         </div>
