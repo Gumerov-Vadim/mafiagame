@@ -18,7 +18,7 @@ const ACTIONS = require('../../socket/actions');
 export default function Room() {
   const { id: roomID } = useParams();
   const { clients, provideMediaRef, toggleMic,toggleCam,MAtoggleMic,MAtoggleCam,
-    handlePause,handleContinue,handleRestart,handleEndGame,
+    handlePause,handleContinue,handleRestart,handleEndGame,handleStart,
      isModerator, playersInfo,
      isCamAllowed,
      isMicAllowed,
@@ -58,6 +58,7 @@ export default function Room() {
       <Navbar/>
       {isModerator&&(
       <GameControlPanel className='gc-panel'
+        onStart={handleStart}
         onPause={handlePause}
         onContinue={handleContinue}
         onRestart={handleRestart}

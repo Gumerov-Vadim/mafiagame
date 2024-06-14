@@ -22,7 +22,102 @@ function shareRoomsInfo() {
   })
 }
 let roomModerators = {};
-let usersData = {}
+let usersData = {};
+let playersInfo = {};
+let gamesInfo = {};
+const roles = {
+  MAFIA: 'mafia',
+  CITITZEN: 'citizen',
+  SHERIFF: 'sheriff',
+  DON:'don',
+}
+const gameStates = {
+  IDLE:'idle',
+  IS_PAUSED: 'is-paused',
+  GAME_ON: 'game-on',
+}
+const gamePhases = {
+  DAY:'day',
+  NIGHT: 'night',
+  VOTING: 'voting',
+}
+//usersNumber
+//usersRole
+
+//setInterval (gameloop,-1 sek)
+function getClientByMail(mail){
+  return playersInfo[mail].client;
+}
+function getMailByClient(client){
+  try{
+  return usersData[client].email}
+  catch(e){
+    console.log(`Не могу получить mail пользователя ${client},\n${e}`);
+  };
+}
+function FisherYatesShuffle(list){
+  const length = list.length;
+  for (let i=0;i<length;i++){
+    let currentObj = list[i];
+    let swappedObjIndex = Math.floor(Math.random()*(length-1));
+    list[i] = list[swappedObjIndex];
+    list[swappedObjIndex] = currentObj;
+  }
+  return list;
+}
+function getListOfRandomNums(countOfPlayers){
+  let listOfRandomNums = [];
+  for(let i=0;i<countOfPlayers;i++){
+    listOfRandomNums.push(i+1);
+  }
+  listOfRandomNums = FisherYatesShuffle(listOfRandomNums);
+  return listOfRandomNums;
+}
+function getListOfRoles(countOfPlayers){
+  if (countOfPlayers<7||countOfPlayers>12) {return []}
+  
+  const countOfMafia = Math.ceil(countOfPlayers/3)-1;
+  const countOfCitizen = countOfPlayers - countOfMafia - 1 - 1;
+  let listOfRoles = [];
+  for(let i = 0;i<countOfMafia;i++){
+    listOfRoles.push(roles.MAFIA);
+  }
+  for(let i = 0;i<countOfCitizen;i++){
+    listOfRoles.push(roles.CITITZEN);
+  }
+  listOfRoles.push(roles.DON);
+  listOfRoles.push(roles.SHERIFF);
+  listOfRoles = FisherYatesShuffle(listOfRoles);
+  return listOfRoles;
+}
+function initGame(roomID,clients){
+  console.log('код здесь');
+  if(gamesInfo[roomID]){return};
+  const moderator = clients.find(client=>roomModerators[roomID] === client);
+  let listOfRandomNums = getListOfRandomNums(clients.length-1);
+  let listOfRoles = getListOfRoles(clients.length-1);
+  clients.forEach(client=>{
+    const mail = getMailByClient(client);
+    playersInfo[mail] = {
+      clientID:client,
+      role:(client===moderator)?moderator:listOfRoles.pop(),
+      number:(client===moderator)?0:listOfRandomNums.pop(),
+      isCamPermit: true,
+      isMicPermit: true,
+      isAlive:true,
+    }
+  })
+  
+  gamesInfo[roomID] = {
+      moderator:moderator,
+      gameState: gameStates.GAME_ON,
+      gamePhase:gamePhases.NIGHT,
+      circleCount:0,
+      deadList:[],
+      SheriffsChecks:[],
+      DonsChecks:[],
+  }
+}
 
 io.on('connection', socket => {
 
@@ -31,20 +126,11 @@ io.on('connection', socket => {
   setTimeout(shareRoomsInfo, 1000);
   socket.on(ACTIONS.JOIN, config => {
     const {room: roomID} = config; //Получаем комнату из конфига
-    // {
-    //   const clients = Array.from(io.sockets.adapter.rooms.get(roomID) || []);
-    //   socket.emit(ACTIONS.TEST, {clients, roomID});
-    // }
     const {rooms: joinedRooms} = socket; //Получаем список всех комнат
-    // console.log(`joinedRooms:${joinedRooms}\nroomID:${roomID}`);
-    // joinedRooms.forEach(room => {
-    //   console.log(`\nroom:${room}`);      
-    // });
     //Ошибка, если уже подключились к этой комнате
     if (Array.from(joinedRooms).includes(roomID)) {
       return console.warn(`Already joined to ${roomID}`);
     } 
-    console.log("test");
     //Получаем всех клиентов из этой комнаты
     const clients = Array.from(io.sockets.adapter.rooms.get(roomID) || []);
 
@@ -55,7 +141,6 @@ io.on('connection', socket => {
         peerID: socket.id,
         createOffer: false
       });
-      console.log(`========\nclientID:${clientID}\nsocket.id:${socket.id}`);
       //Оффер создаёт сторона, которая подключается
       socket.emit(ACTIONS.ADD_PEER, {
         peerID: clientID,
@@ -82,12 +167,29 @@ io.on('connection', socket => {
     const { rooms } = socket;
     const roomID = Array.from(rooms).find(roomID => roomModerators[roomID] === socket.id);
 
+    //Получаем всех клиентов из этой комнаты
+      const clients = Array.from(io.sockets.adapter.rooms.get(roomID) || []);
     if (!roomID) {
       return console.warn('Only the moderator can perform this action');
     }
     if(targetClientID==='all'){
-      //Получаем всех клиентов из этой комнаты
-      const clients = Array.from(io.sockets.adapter.rooms.get(roomID) || []);
+      switch(action){
+        case ACTIONS.MA.START_GAME:
+          startGame(roomID,clients);
+          break;
+        case ACTIONS.MA.RESTART_GAME:
+          restartGame(roomID);
+          break;
+        case ACTIONS.MA.PAUSE_GAME:
+          pauseGame(roomID);
+          break;
+        case ACTIONS.MA.RESUME_GAME:
+          resumeGame(roomID);
+          break;
+        case ACTIONS.MA.FINISH_GAME:
+          finishGame(roomID,clients);
+          break;
+      }
       clients.forEach(clientID=>{
         io.to(clientID).emit(ACTIONS.MODERATOR_ACTION, {action});
       })
@@ -96,6 +198,39 @@ io.on('connection', socket => {
     io.to(targetClientID).emit(ACTIONS.MODERATOR_ACTION, { action });
     }
   });
+  
+function startGame(roomID, clients){
+  
+  initGame(roomID,clients);
+  //emit уведомление о ролях
+  //timeout emit на включение вебок для мафии
+  //timeout emit на выключение.
+}
+
+function restartGame(roomID){
+  finishGame(roomID);
+  startGame(roomID);
+}
+
+function pauseGame(roomID){
+  //clearInterval gameloop
+}
+
+function resumeGame(roomID){
+  //Interval gameloop
+}
+
+function finishGame(roomID,clients){
+  console.log(`playersInfo:${JSON.stringify(playersInfo)}\ngamesInfo:${JSON.stringify(gamesInfo)}`);
+  clients.forEach(client=>{
+    delete playersInfo[getMailByClient(client)];
+  });
+  delete gamesInfo[roomID];
+  console.log(`playersInfo:${JSON.stringify(playersInfo)}\ngamesInfo:${JSON.stringify(gamesInfo)}`);
+  //emit уведомление о завершении
+  //delete users role, number, data и прочее...
+}
+
   //Функция для выхода из комнаты
   function leaveRoom() {
     console.log("Socket disconnected!");

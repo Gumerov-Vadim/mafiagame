@@ -263,14 +263,6 @@ export default function useWebRTC(roomID) {
   const [isCamPermitted,setIsCamPermitted] = useState(true);
   const [isMicPermitted,setIsMicPermitted] = useState(true);
 
-  // useEffect(()=>{
-  //   userData.Cam.isCamAllowed = isCamAllowed;
-  //   userData.Cam.isCamEnabled = isCamEnabled;
-  //   userData.Cam.isCamPermitted = isCamPermitted;
-  //   userData.Mic.isCamAllowed = isMicAllowed;
-  //   userData.Mic.isCamEnabled = isMicEnabled;
-  //   userData.Mic.isCamPermitted = isMicPermitted;
-  // },[isCamAllowed,isMicAllowed,isCamEnabled,isCamPermitted,isMicPermitted]);
 
   // Добавляем useEffect для обработки включения/выключения камеры/микрофона
     const disableMyCamToAll = () =>{
@@ -426,6 +418,9 @@ export default function useWebRTC(roomID) {
   const handleContinue = useCallback(()=>{
     socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action: ACTIONS.MA.RESUME_GAME} )
   },[])
+  const handleStart = useCallback(()=>{
+    socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action: ACTIONS.MA.START_GAME} )
+  },[])
   const handleRestart = useCallback(()=>{
     socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action: ACTIONS.MA.RESTART_GAME} )
   },[])
@@ -460,7 +455,7 @@ export default function useWebRTC(roomID) {
     provideMediaRef,
     toggleMic,toggleCam,
     MAtoggleMic,MAtoggleCam,
-    handlePause,handleContinue,handleRestart,handleEndGame,
+    handlePause,handleContinue,handleRestart,handleEndGame,handleStart,
     isModerator,
     isCamAllowed,
     isMicAllowed,

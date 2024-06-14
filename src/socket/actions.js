@@ -17,6 +17,7 @@ const ACTIONS = {
         CHANGE_PLAYER_CAM_ALLOW:'ma-change-player-cam-allow',
         SKIP_TURN:'ma-skip-turn',
         ASSIGN_PLAYER_TURN: 'ma-assign-player-turn',
+        START_GAME:'start-game',
         PAUSE_GAME:'ma-pause-game',
         RESUME_GAME:'ma-resume-game',
         RESTART_GAME:'ma-restart-game',
@@ -29,7 +30,10 @@ const ACTIONS = {
     DON_CHECK:'don-check',
     MAFIA_SHOT:'mafia-shot'},
     KICK:'kick',
-    CLIENT_INFO: 'client-info'
+    CLIENT_INFO: 'client-info',
+    GAME_EVENT:{
+        SEND_ROLE:'send-role',
+    }
     // TEST: 'test'
 };
 
