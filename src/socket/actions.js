@@ -11,6 +11,7 @@ const ACTIONS = {
     SET_MODERATOR: 'set-moderator', // New action
     //действия для модератора
     MODERATOR_ACTION: 'moderator-action',
+    KICK:'kick',
     MA: 
     {
         CHANGE_PLAYER_MIC_ALLOW:'ma-change-player-mic-allow',
@@ -29,7 +30,6 @@ const ACTIONS = {
     SHERIFF_CHECK:'sheriff-check',
     DON_CHECK:'don-check',
     MAFIA_SHOT:'mafia-shot'},
-    KICK:'kick',
     CLIENT_INFO: 'client-info',
     GAME_EVENT:{
         SEND_ROLE:'send-role',

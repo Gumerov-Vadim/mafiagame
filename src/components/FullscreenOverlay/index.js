@@ -1,17 +1,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-const FullscreenOverlay = ({ color, children }) => {
+const FullscreenOverlay = ({ bgcolor,textcolor, children }) => {
   const overlayStyle = {
     position: 'fixed',
     top: 0,
     left: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: color,
+    backgroundColor: bgcolor,
+    color: textcolor??'white',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
+    flexDirection:'column',
   };
 
   return (

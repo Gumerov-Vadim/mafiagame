@@ -6,24 +6,25 @@ import Navbar from '../../components/Navbar';
 import { Button } from '../../components/UI';
 import './Room.css';
 import GameControlPanel from '../../components/GameControlPanel';
+import FullscreenOverlay from '../../components/FullscreenOverlay';
 import CamIsNotAllowedIcon from '../../images/icons/camisdisable.png';
 import MicIsNotAllowedIcon from '../../images/icons/micisdisable.png';
 import EnableCamIcon from '../../images/icons/enablecam.png';
 import DisableCamIcon from '../../images/icons/disablecam.png';
 import MuteMicIcon from '../../images/icons/mutemic.png';
 import UnmuteMicIcon from '../../images/icons/unmutemic.png';
+import { useNavigate } from 'react-router';
 const ACTIONS = require('../../socket/actions');
 
 
 export default function Room() {
+  const navigate = useNavigate();
   const { id: roomID } = useParams();
   const { clients, provideMediaRef, toggleMic,toggleCam,MAtoggleMic,MAtoggleCam,
     handlePause,handleContinue,handleRestart,handleEndGame,handleStart,
      isModerator, playersInfo,
-     isCamAllowed,
-     isMicAllowed,
-     isCamEnabled,
-     isMicEnabled
+     isCamAllowed,isMicAllowed,isCamEnabled,isMicEnabled,
+     isRejected
     } = useWebRTC(roomID);
   const [testVideo,setTestVideo] = useState(true);
   const test = (index)=>{
@@ -55,6 +56,7 @@ export default function Room() {
   
   return testVideo?(
     <div>
+      {isRejected&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>{isRejected}<Button style={{marginTop:'20px'}} onClick={() => {navigate(`/`);}}>Вернуться на главную</Button></FullscreenOverlay>)}
       <Navbar/>
       {isModerator&&(
       <GameControlPanel className='gc-panel'

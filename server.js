@@ -91,7 +91,6 @@ function getListOfRoles(countOfPlayers){
   return listOfRoles;
 }
 function initGame(roomID,clients){
-  console.log('код здесь');
   if(gamesInfo[roomID]){return};
   const moderator = clients.find(client=>roomModerators[roomID] === client);
   let listOfRandomNums = getListOfRandomNums(clients.length-1);
@@ -110,13 +109,18 @@ function initGame(roomID,clients){
   
   gamesInfo[roomID] = {
       moderator:moderator,
+      remainingTime:60,
       gameState: gameStates.GAME_ON,
       gamePhase:gamePhases.NIGHT,
       circleCount:0,
+      currentTurnPlayer:'',
       deadList:[],
+      votingPlayers:[],
       SheriffsChecks:[],
       DonsChecks:[],
   }
+  console.log(`\n===================\nusersData:${JSON.stringify(usersData)}\n`);
+  console.log(`playersInfo:${JSON.stringify(playersInfo)}\ngamesInfo:${gamesInfo}`);
 }
 
 io.on('connection', socket => {
@@ -297,25 +301,23 @@ function finishGame(roomID,clients){
   socket.on(ACTIONS.CLIENT_INFO,({peerid,userData})=>{
     // Проверка, существует ли email
     let emailExists = false;
-  
+    let keyid;
     for (let key in usersData) {
       if (usersData[key].email === userData.email) {
         emailExists = true;
+        keyid = key;
         break;
       }
     }
   
-    if (!emailExists) {
-      // Если email не найден, добавляем новую запись
-      usersData[peerid] = userData;
-      console.log('New user added:', usersData);
-    } else {
-      console.log(`\nTO DO!\nобработать повторное подключение пользователя, который уже зашёл!\n`);
-      console.log('\nusersData:', usersData);
-      //TO DO
-      //обработать повторное подключение пользователя, который уже зашёл
+    if (emailExists) {
+      delete usersData[keyid];
+      io.to(keyid).emit(ACTIONS.KICK, 'Вы зашли с другого устройства.');
       //https://upgraide.me/chat?id=330a3c31-25b8-11ef-b1f4-0242c0a8800d
-    }  
+    }
+    // Если email, отключаем старый токен
+    console.log('New user added:', usersData);
+    usersData[peerid] = userData;
   })
   socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
     io.emit(ACTIONS.ENABLE_CAMERA, { peerID });

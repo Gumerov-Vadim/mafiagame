@@ -262,7 +262,7 @@ export default function useWebRTC(roomID) {
   const [isMicEnabled,setIsMicEnabled] = useState(true);
   const [isCamPermitted,setIsCamPermitted] = useState(true);
   const [isMicPermitted,setIsMicPermitted] = useState(true);
-
+  const [isRejected,setIsRejected] = useState('');
 
   // Добавляем useEffect для обработки включения/выключения камеры/микрофона
     const disableMyCamToAll = () =>{
@@ -404,6 +404,16 @@ export default function useWebRTC(roomID) {
     };
   }, []);
   
+  useEffect(()=>{
+    socket.on(ACTIONS.KICK,(reason)=>{
+      setIsRejected(reason);
+      if (localMediaStream.current) {
+      localMediaStream.current.getTracks().forEach(track => track.stop());
+    }
+      socket.emit(ACTIONS.LEAVE);
+    });
+  });
+
   const MAtoggleMic = useCallback((peerID)=>{
     socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:peerID,action: ACTIONS.MA.CHANGE_PLAYER_MIC_ALLOW} )
 },[])
@@ -461,6 +471,7 @@ export default function useWebRTC(roomID) {
     isMicAllowed,
     isCamEnabled,
     isMicEnabled,
+    isRejected,
   };
 
 }
