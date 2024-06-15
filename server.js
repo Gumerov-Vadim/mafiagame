@@ -4,6 +4,7 @@ const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 const {version, validate} = require('uuid');
+const {roles,gamePhases,gameStates} = require('./src/mafiavariables');
 
 const ACTIONS = require('./src/socket/actions');
 const PORT = process.env.PORT || 3001;
@@ -23,30 +24,14 @@ function shareRoomsInfo() {
 }
 let roomModerators = {};
 let usersData = {};
-let playersInfo = {};
-let gamesInfo = {};
-const roles = {
-  MAFIA: 'mafia',
-  CITITZEN: 'citizen',
-  SHERIFF: 'sheriff',
-  DON:'don',
-}
-const gameStates = {
-  IDLE:'idle',
-  IS_PAUSED: 'is-paused',
-  GAME_ON: 'game-on',
-}
-const gamePhases = {
-  DAY:'day',
-  NIGHT: 'night',
-  VOTING: 'voting',
-}
+let players = {};
+let games = {};
 //usersNumber
 //usersRole
 
 //setInterval (gameloop,-1 sek)
 function getClientByMail(mail){
-  return playersInfo[mail].client;
+  return players[mail].client;
 }
 function getMailByClient(client){
   try{
@@ -91,13 +76,13 @@ function getListOfRoles(countOfPlayers){
   return listOfRoles;
 }
 function initGame(roomID,clients){
-  if(gamesInfo[roomID]){return};
+  if(games[roomID]){return};
   const moderator = clients.find(client=>roomModerators[roomID] === client);
   let listOfRandomNums = getListOfRandomNums(clients.length-1);
   let listOfRoles = getListOfRoles(clients.length-1);
   clients.forEach(client=>{
     const mail = getMailByClient(client);
-    playersInfo[mail] = {
+    players[mail] = {
       clientID:client,
       role:(client===moderator)?moderator:listOfRoles.pop(),
       number:(client===moderator)?0:listOfRandomNums.pop(),
@@ -107,22 +92,47 @@ function initGame(roomID,clients){
     }
   })
   
-  gamesInfo[roomID] = {
+  games[roomID] = {
       moderator:moderator,
       remainingTime:60,
-      gameState: gameStates.GAME_ON,
-      gamePhase:gamePhases.NIGHT,
+      state: gameStates.GAME_ON,
+      phase:gamePhases.NIGHT,
       circleCount:0,
-      currentTurnPlayer:'',
+      currentTurnPlayer:1,
       deadList:[],
       votingPlayers:[],
       SheriffsChecks:[],
       DonsChecks:[],
+      talkedPlayers:[],
   }
   console.log(`\n===================\nusersData:${JSON.stringify(usersData)}\n`);
-  console.log(`playersInfo:${JSON.stringify(playersInfo)}\ngamesInfo:${gamesInfo}`);
+  console.log(`players:${JSON.stringify(players)}\ngames:${games}`);
 }
 
+function gameTick(){
+  games.forEach(game=>{
+    if(!game.remainingTime--){
+      game.remainingTime=60;
+      switch (game.phase){
+        case gamePhases.DAY:
+
+          game.talkedPlayers.push(currentTurnPlayer++);
+          if(!players.find(player=>{player.number===game.currentTurnPlayer})){game.currentTurnPlayer=1}
+          if(players.find(player=>{player})){}
+          break;
+        case gamePhases.NIGHT:
+
+        break;
+        case gamePhases.VOTING:
+
+        break;
+      }
+
+
+
+    }
+  })
+}
 io.on('connection', socket => {
 
   //При подключении делимся со всеми сокета информацией о комнатах.
@@ -202,7 +212,6 @@ io.on('connection', socket => {
     io.to(targetClientID).emit(ACTIONS.MODERATOR_ACTION, { action });
     }
   });
-  
 function startGame(roomID, clients){
   
   initGame(roomID,clients);
@@ -225,12 +234,12 @@ function resumeGame(roomID){
 }
 
 function finishGame(roomID,clients){
-  console.log(`playersInfo:${JSON.stringify(playersInfo)}\ngamesInfo:${JSON.stringify(gamesInfo)}`);
+  console.log(`players:${JSON.stringify(players)}\ngames:${JSON.stringify(games)}`);
   clients.forEach(client=>{
-    delete playersInfo[getMailByClient(client)];
+    delete players[getMailByClient(client)];
   });
-  delete gamesInfo[roomID];
-  console.log(`playersInfo:${JSON.stringify(playersInfo)}\ngamesInfo:${JSON.stringify(gamesInfo)}`);
+  delete games[roomID];
+  console.log(`players:${JSON.stringify(players)}\ngames:${JSON.stringify(games)}`);
   //emit уведомление о завершении
   //delete users role, number, data и прочее...
 }
