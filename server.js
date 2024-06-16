@@ -26,8 +26,6 @@ let roomModerators = {};
 let usersData = {};
 let players = {};
 let games = {};
-//usersNumber
-//usersRole
 
 //setInterval (gameloop,-1 sek)
 function getClientByMail(mail){
@@ -84,11 +82,12 @@ function initGame(roomID,clients){
     const mail = getMailByClient(client);
     players[mail] = {
       clientID:client,
-      role:(client===moderator)?moderator:listOfRoles.pop(),
+      role:(client===moderator)?roles.GAME_MASTER:listOfRoles.pop(),
       number:(client===moderator)?0:listOfRandomNums.pop(),
       isCamPermit: true,
       isMicPermit: true,
       isAlive:true,
+      votedIn:[],
     }
   })
   
@@ -100,30 +99,88 @@ function initGame(roomID,clients){
       circleCount:0,
       currentTurnPlayer:1,
       deadList:[],
-      votingPlayers:[],
       SheriffsChecks:[],
       DonsChecks:[],
       talkedPlayers:[],
-  }
+      voting:{
+        playersToVote:[],
+        currentVotePlayer:-1,
+        maxVotes:-1,
+        maxVotedPlayers:[],
+        isRevoting:false,
+      },
+    }
+  
   console.log(`\n===================\nusersData:${JSON.stringify(usersData)}\n`);
-  console.log(`players:${JSON.stringify(players)}\ngames:${games}`);
+  console.log(`players:${JSON.stringify(players)}\ngames:${JSON.stringify(games)}`);
 }
 
+function voteEvent(playerToVoteList){
+  setTimeout(()=>{
+    //emit.to all playerToVoteList.pop() // отправка игрока на голосование
+    voteEvent(playerToVoteList)
+  },5000);
+}
+//TO DO: function shareGameState emit.
 function gameTick(){
   games.forEach(game=>{
-    if(!game.remainingTime--){
-      game.remainingTime=60;
+    if(game.remainingTime--){
       switch (game.phase){
         case gamePhases.DAY:
-
-          game.talkedPlayers.push(currentTurnPlayer++);
+          game.remainingTime=60;
+          //человек договорил, записываем его к людям, которые поговорили и передаём ход следующему
+          game.talkedPlayers.push(game.currentTurnPlayer++);
           if(!players.find(player=>{player.number===game.currentTurnPlayer})){game.currentTurnPlayer=1}
-          if(players.find(player=>{player})){}
+          //когда среди игроков не остаётся таких, которые не поговорили переходим к голосованию
+          if(!players.every(player=>{talkedPlayers.includes(player.number)||player.role===roles.GAME_MASTER})){
+          //все поговорили-> очищаем список и запускаем голосование
+            game.talkedPlayers = [];
+            game.phase = gamePhases.VOTING;
+            
+          }
+            //TO DO: emit на обновление состояния
+          break;
+        case gamePhases.VOTING:
+          game.remainingTime=5;
+          //Процесс голсоования
+          switch(game.voting.playersToVote.length){    
+              //никто не выставлен -> уходим в ночь
+            case 0:
+              
+              break;
+              //выставлен только 1 -> кик и уходим в ночь
+            case 1:
+
+              break;
+              //выставлено больше 1 -> голосование
+            default:
+              let listOfPlayersToVote = game.voting.playersToVote;
+            if(game.voting.length !==0){
+              votedPlayer = game.voting.playersToVote.pop();
+              //TO DO: отправить игрока, за которого сейчас голосуют
+            }
+            //считаем голоса
+            let listOfVotes=[];
+            let revotedPlayers=[];
+            players.forEach(player=>{
+              voteInCount =  player.votedIn.length;
+              listOfVotes.push({playerNumber:player.number,voteInCount:voteInCount});
+            });
+            
+            //самый заголосованный игрок
+            let maxVotedPlayer = listOfVotes.reduce((prev,cur)=>{prev.voteInCount<cur?.voteInCount?prev:cur},{playerNumber:-1,voteInCount:-1});
+            revotedPlayers = listOfVotes.filter((voted)=>voted.voteInCount===maxVotedPlayer.voteInCount);
+            if (revotedPlayers.map(revotedPlayer=>{revotedPlayers.playerNumber})===game.voting){
+            }
+            game.voting = [];
+              revotedPlayers.forEach((revotedPlayer)=>{
+                game.voting.push(revotedPlayer.playerNumber);
+              })
+            break;
+            }
           break;
         case gamePhases.NIGHT:
-
-        break;
-        case gamePhases.VOTING:
+          game.remainingTime=30;
 
         break;
       }

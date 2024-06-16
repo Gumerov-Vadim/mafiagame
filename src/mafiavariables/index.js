@@ -1,4 +1,5 @@
 const roles = {
+    GAME_MASTER: 'game-master',
     MAFIA: 'mafia',
     CITITZEN: 'citizen',
     SHERIFF: 'sheriff',
