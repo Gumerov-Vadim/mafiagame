@@ -14,6 +14,7 @@ import DisableCamIcon from '../../images/icons/disablecam.png';
 import MuteMicIcon from '../../images/icons/mutemic.png';
 import UnmuteMicIcon from '../../images/icons/unmutemic.png';
 import { useNavigate } from 'react-router';
+const {roles,gamePhases,gameStates} = require('../../mafiavariables');
 const ACTIONS = require('../../socket/actions');
 
 
@@ -22,9 +23,11 @@ export default function Room() {
   const { id: roomID } = useParams();
   const { clients, provideMediaRef, toggleMic,toggleCam,MAtoggleMic,MAtoggleCam,
     handlePause,handleContinue,handleRestart,handleEndGame,handleStart,
-     isModerator, playersInfo,
+     isModerator,myClientID,
      isCamAllowed,isMicAllowed,isCamEnabled,isMicEnabled,
-     isRejected
+     isRejected,
+     message,remainingTime,currentTurnPlayerNumber,gamePhase,gameState,playersInfo,
+     putUpForVotePlayer,myPutUpVotePlayerNumber,playersToVote,
     } = useWebRTC(roomID);
   const [testVideo,setTestVideo] = useState(true);
   const test = (index)=>{
@@ -56,6 +59,7 @@ export default function Room() {
   
   return testVideo?(
     <div>
+      {message&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>{message}</FullscreenOverlay>)}
       {isRejected&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>{isRejected}<Button style={{marginTop:'20px'}} onClick={() => {navigate(`/`);}}>Вернуться на главную</Button></FullscreenOverlay>)}
       <Navbar/>
       {isModerator&&(
@@ -72,10 +76,11 @@ export default function Room() {
         return (
           // <div key={clientID} style={videoLayout[index]} id={clientID}>
           //сделать посишн релатив и посишн абсолют внутри управления у локал видео участника и у модератора
-        <div key={clientID} className={videoLayout()} id={clientID}>
-          <div className='player-info'>
-          <p className='player-name'>Игрок 1.Господин Мустафа</p>
-          <p className='player-role'>МАФИЯ</p>
+          
+        <div  style={{display:(!playersInfo[clientID===LOCAL_VIDEO?myClientID:clientID]?.isAlive)&&gameState===gameStates.GAME_ON?'none':'block'}} key={clientID} className={videoLayout()} id={clientID}>
+          <div className='player-info'>{console.log(JSON.stringify(playersInfo))}
+          <p className='player-name'>Игрок {playersInfo[clientID===LOCAL_VIDEO?myClientID:clientID]?.number}.{playersInfo[clientID===LOCAL_VIDEO?myClientID:clientID]?.gender==='Мужской'?'Господин':'Госпожа'} {playersInfo[clientID===LOCAL_VIDEO?myClientID:clientID]?.name}</p>
+          <p className='player-role'>{playersInfo[clientID===LOCAL_VIDEO?myClientID:clientID]?.role}</p>
           </div>
           <video
             width='100%'
@@ -89,6 +94,9 @@ export default function Room() {
               display: 'block'
             }}
           />
+          {(!myPutUpVotePlayerNumber)&&(playersInfo[myClientID]?.number===currentTurnPlayerNumber)&&(!(clientID===LOCAL_VIDEO))&&(!(playersInfo[clientID]?.number===0))&&(
+            <Button className='put-up-for-vote-button' onClick={()=>{putUpForVotePlayer(playersInfo[clientID]?.number)}}>Выставить на голосование</Button>
+            )}
           {(isModerator || clientID === LOCAL_VIDEO) && (
             <div className='video-controls'>
               <Button className='cam-button' onClick={clientID === LOCAL_VIDEO ? toggleCam : () => MAtoggleCam(clientID)}>
@@ -107,17 +115,33 @@ export default function Room() {
     }
     
     <div className='video-wrapper game-info'>
-    <p>Таймер: <span id="timer">00:00</span></p>
-    <p>Круг: 1. День</p>
-    <p>Ход игрока: 1. Господин Мустафа</p>
-    <p>Выставлены на голосование: 1, 2, 5</p>
-    <div>
-        <h3>Мои заметки:</h3>
-        <textarea id="notes" placeholder="Оставьте здесь свои заметки..." rows="10" cols="50"></textarea>
-    </div>
-    </div>
+    {gameState===gameStates.GAME_ON&&(<>
+      <p>Таймер: <span id="timer">{remainingTime}</span></p>
+      <p>Круг: 1. {gamePhase}</p>
+      <p>Ход игрока: {currentTurnPlayerNumber}.{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.gender==='Мужской'?'Господин ':'Госпожа '}{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.name}</p>
+      <p>Выставлены на голосование: {()=>{
+        let listToVotePlayers = ''
+        playersToVote.forEach(player=>{return listToVotePlayers+player+' '})
+        return listToVotePlayers;
+      }}</p>
+      <div>
+          <h3>Мои заметки:</h3>
+          <textarea id="notes" placeholder="Оставьте здесь свои заметки..." rows="10" cols="50"></textarea>
+      </div>
+      </>)}
+    {gameState===gameStates.IDLE&&(<><p>Это информативный блок!</p><p>Ожидание игроков...</p></>)}
+    {gameState===gameStates.IS_PAUSED&&(<>
+      <p>Таймер: <span id="timer">Игра приостановлена</span></p>
+      <p>Круг: 1. {gamePhase}</p>
+      <p>Ход игрока: {currentTurnPlayerNumber}.{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.gender==='Мужской'?'Господин ':'Госпожа '}{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.name}</p>
+      <p>Выставлены на голосование: {JSON.stringify(playersToVote)}</p>
+      <div>
+          <h3>Мои заметки:</h3>
+          <textarea id="notes" placeholder="Оставьте здесь свои заметки..." rows="10" cols="50"></textarea>
+      </div></>)}
+      </div>
 
-    </div>
+      </div>
     </div>
   ):(
     <div>test video</div>

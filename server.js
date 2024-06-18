@@ -7,6 +7,7 @@ const {version, validate} = require('uuid');
 const {roles,gamePhases,gameStates} = require('./src/mafiavariables');
 
 const ACTIONS = require('./src/socket/actions');
+const { copyFileSync } = require('fs');
 const PORT = process.env.PORT || 3001;
 
 //Возвращает список всех комнат, которые сущестувют
@@ -24,13 +25,8 @@ function shareRoomsInfo() {
 }
 let roomModerators = {};
 let usersData = {};
-let players = {};
 let games = {};
 
-//setInterval (gameloop,-1 sek)
-function getClientByMail(mail){
-  return players[mail].client;
-}
 function getMailByClient(client){
   try{
   return usersData[client].email}
@@ -57,7 +53,6 @@ function getListOfRandomNums(countOfPlayers){
   return listOfRandomNums;
 }
 function getListOfRoles(countOfPlayers){
-  if (countOfPlayers<7||countOfPlayers>12) {return []}
   
   const countOfMafia = Math.ceil(countOfPlayers/3)-1;
   const countOfCitizen = countOfPlayers - countOfMafia - 1 - 1;
@@ -71,16 +66,39 @@ function getListOfRoles(countOfPlayers){
   listOfRoles.push(roles.DON);
   listOfRoles.push(roles.SHERIFF);
   listOfRoles = FisherYatesShuffle(listOfRoles);
+  console.log(`ROLES:${JSON.stringify(listOfRoles)}`);
   return listOfRoles;
 }
+function resetVoting(game){
+  game.voting = {
+    playersToVote:[],
+    isRevoting:0,
+  };
+  resetPlayersVotes(game);
+}
+function resetPlayersVotes(game){
+  game.players.forEach(player=>{
+    player.voteIn=[];
+    player.myVote=-1;
+  })
+}
+function sendEmitToAll(game,action,sendedObject){
+  game.players.forEach(player=>{
+    io.to(player.clientID).emit(action,sendedObject);
+  });
+}
 function initGame(roomID,clients){
+  const countOfPlayers =8;//clients.lenght;
+  if (countOfPlayers<7||countOfPlayers>12) {return []}
   if(games[roomID]){return};
-  const moderator = clients.find(client=>roomModerators[roomID] === client);
+  const moderator = clients.find(client=>{return roomModerators[roomID] === client});
   let listOfRandomNums = getListOfRandomNums(clients.length-1);
   let listOfRoles = getListOfRoles(clients.length-1);
+  let listOfPlayers = [];
   clients.forEach(client=>{
     const mail = getMailByClient(client);
-    players[mail] = {
+    listOfPlayers.push({
+      mail:mail,
       clientID:client,
       role:(client===moderator)?roles.GAME_MASTER:listOfRoles.pop(),
       number:(client===moderator)?0:listOfRandomNums.pop(),
@@ -88,108 +106,213 @@ function initGame(roomID,clients){
       isMicPermit: true,
       isAlive:true,
       votedIn:[],
-    }
+      myVote:-1,
+      myPutUp:0,
+    });
   })
   
   games[roomID] = {
       moderator:moderator,
-      remainingTime:60,
+      remainingTime:3,
       state: gameStates.GAME_ON,
-      phase:gamePhases.NIGHT,
+      phase:gamePhases.DAY,
       circleCount:0,
-      currentTurnPlayer:1,
+      currentTurnPlayerNumber:1,
       deadList:[],
+      talkedPlayers:[],
       SheriffsChecks:[],
       DonsChecks:[],
-      talkedPlayers:[],
+      players:listOfPlayers,
       voting:{
         playersToVote:[],
-        currentVotePlayer:-1,
-        maxVotes:-1,
-        maxVotedPlayers:[],
-        isRevoting:false,
-      },
+        isRevoting:0,
+      }
     }
   
-  console.log(`\n===================\nusersData:${JSON.stringify(usersData)}\n`);
-  console.log(`players:${JSON.stringify(players)}\ngames:${JSON.stringify(games)}`);
+  // console.log(`\n===================\nusersData:${JSON.stringify(usersData)}\n`);
+  // console.log(`games:${JSON.stringify(games)}`);
+
+  
+  sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_PHASE,{phase:games[roomID].phase});
+  sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_CURRENT_TURN_PLAYER,{curTurnPlayerNumber:games[roomID].currentTurnPlayerNumber});
+  
+  games[roomID].players.forEach(playerToEmit=>{
+    let players = {};
+    if(playerToEmit.role===roles.GAME_MASTER){
+      games[roomID].players.forEach(player=>{
+        players[player.clientID]=
+        {
+          clientID:player.clientID,
+          name:usersData[player.clientID].name,
+          gender:usersData[player.clientID].gender,
+          number:player.number,
+          role:player.role,
+          isAlive:player.isAlive,
+        }
+      })
+    }
+    else if(playerToEmit.role===(roles.MAFIA||roles.DON)){
+      games[roomID].players.forEach(player=>{
+      players[player.clientID]=
+      {
+        clientID:player.clientID,
+        name:usersData[player.clientID].name,
+        gender:usersData[player.clientID].gender,
+        number:player.number,
+        role:playerToEmit.clientID===player.clientID?player.role:(player.role===(roles.MAFIA||roles.DON))?player.role:'',
+        isAlive:player.isAlive,
+      }
+      })
+    }
+    else{
+      games[roomID].players.forEach(player=>{
+      players[player.clientID]=
+      {
+        clientID:player.clientID,
+        name:usersData[player.clientID].name,
+        gender:usersData[player.clientID].gender,
+        number:player.number,
+        role:playerToEmit.clientID===player.clientID?player.role:player.role===roles.GAME_MASTER?player.role:'',
+        isAlive:player.isAlive,
+      }
+      })
+    }
+    io.to(playerToEmit.clientID).emit(ACTIONS.GAME_EVENT.SHARE_PLAYERS,{players:players})
+  })
 }
 
-function voteEvent(playerToVoteList){
-  setTimeout(()=>{
-    //emit.to all playerToVoteList.pop() // отправка игрока на голосование
-    voteEvent(playerToVoteList)
-  },5000);
-}
 //TO DO: function shareGameState emit.
 function gameTick(){
-  games.forEach(game=>{
-    if(game.remainingTime--){
+  Object.values(games).forEach(game=>{
+    if((game.state===gameStates.IDLE)||(game.state===gameStates.IS_PAUSED)){return}
+    sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_REMAINING_TIME,{remTime:game.remainingTime});
+    if(!game.remainingTime--){
+      sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_PHASE,{phase:game.phase});
+      sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_STATE,{state:game.state});
+      // sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,{putUpForVoteList:game.voting.playersToVote});
+
       switch (game.phase){
         case gamePhases.DAY:
-          game.remainingTime=60;
+          game.remainingTime=30;//60
           //человек договорил, записываем его к людям, которые поговорили и передаём ход следующему
-          game.talkedPlayers.push(game.currentTurnPlayer++);
-          if(!players.find(player=>{player.number===game.currentTurnPlayer})){game.currentTurnPlayer=1}
+          game.talkedPlayers.push(game.currentTurnPlayerNumber);
+          game.currentTurnPlayerNumber=++game.currentTurnPlayerNumber;
+          if(!(game.players.some(player=>{return player.number===game.currentTurnPlayerNumber}))){game.currentTurnPlayerNumber=1}
+          sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_CURRENT_TURN_PLAYER,{curTurnPlayerNumber:game.currentTurnPlayerNumber});
+          // sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,game.voting.playersToVote);
           //когда среди игроков не остаётся таких, которые не поговорили переходим к голосованию
-          if(!players.every(player=>{talkedPlayers.includes(player.number)||player.role===roles.GAME_MASTER})){
+          if(game.players.every(player=>{return game.talkedPlayers.includes(player.number)||player.role===roles.GAME_MASTER})){
+            console.log(`talkedPlayers:${game.talkedPlayers}\ngame.players:${JSON.stringify(game.players)}`);
           //все поговорили-> очищаем список и запускаем голосование
             game.talkedPlayers = [];
             game.phase = gamePhases.VOTING;
             
+            let message ='Все поговорили.\nВыставлены игроки под номерами:\n';
+            game.voting.playersToVote.forEach((ptv)=>{message+' '+ptv});
+            message = message + '\nГолосование!';
+            sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:message});
           }
-            //TO DO: emit на обновление состояния
+            //TO DO: emit на обновление состояния, разрешение поговорить
+            
           break;
         case gamePhases.VOTING:
-          game.remainingTime=5;
-          //Процесс голсоования
-          switch(game.voting.playersToVote.length){    
-              //никто не выставлен -> уходим в ночь
-            case 0:
-              
-              break;
-              //выставлен только 1 -> кик и уходим в ночь
-            case 1:
-
-              break;
-              //выставлено больше 1 -> голосование
-            default:
-              let listOfPlayersToVote = game.voting.playersToVote;
-            if(game.voting.length !==0){
-              votedPlayer = game.voting.playersToVote.pop();
-              //TO DO: отправить игрока, за которого сейчас голосуют
-            }
-            //считаем голоса
-            let listOfVotes=[];
-            let revotedPlayers=[];
-            players.forEach(player=>{
-              voteInCount =  player.votedIn.length;
-              listOfVotes.push({playerNumber:player.number,voteInCount:voteInCount});
-            });
+          // если 
+          game.remainingTime=10;
+          //emit toVote game.voting.playersToVote.unshift();
+          //пока не останется 1 или 0;
+          switch(game.voting.isRevoting){
             
-            //самый заголосованный игрок
-            let maxVotedPlayer = listOfVotes.reduce((prev,cur)=>{prev.voteInCount<cur?.voteInCount?prev:cur},{playerNumber:-1,voteInCount:-1});
-            revotedPlayers = listOfVotes.filter((voted)=>voted.voteInCount===maxVotedPlayer.voteInCount);
-            if (revotedPlayers.map(revotedPlayer=>{revotedPlayers.playerNumber})===game.voting){
-            }
-            game.voting = [];
-              revotedPlayers.forEach((revotedPlayer)=>{
-                game.voting.push(revotedPlayer.playerNumber);
-              })
-            break;
-            }
+            default:
+              //emit toVote game.voting.playersToVote.pop();
+              
+              if(game.voting.playersToVote.length<2){
+                //Если остался 1 человек, все непроголосовавшие игроки голосуют в него.
+                if(game.voting.playersToVote.length===1){
+                  let lastVotedPlayerNumber = game.voting.playersToVote.pop();
+                  game.players.forEach((player)=>{
+                    player.myVote = player.myVote===-1?lastVotedPlayerNumber:player.myVote;
+                  });
+                  let lastVotedPlayer = game.players.find((player)=>{player.number===lastVotedPlayerNumber});
+                  game.players.forEach((player)=>{
+                    if(player.myVote===lastVotedPlayerNumber){
+                      lastVotedPlayer.voteIn = player.number;
+                    }
+                  })
+                }
+                //считаем голоса
+                let maxVotes = -1;
+                game.players.forEach((player)=>{
+                  maxVotes = player.votedIn.length>maxVotes?player.votedIn.length:maxVotes;
+                });
+                let countMaxVotedPlayers = 0;
+                game.players.forEach((player)=>{
+                  countMaxVotedPlayers = player.votedIn.length===maxVotes?countMaxVotedPlayers++:countMaxVotedPlayers;
+                });
+                
+                //результат голосования
+                if(countMaxVotedPlayers===0){
+                  sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:'Никто не был изгнан.\nГород засыпает...'});
+                  resetVoting(game);
+                  game.phase = gamePhases.NIGHT;
+                  game.remainingTime = 3;
+                }
+                else if(countMaxVotedPlayers===1){
+                  //TO DO: emit кик, уходим в ночь
+                  const message = 'был изгнан игрок №'+game.players.find(player=>{player.voteIn.length===maxVotes}).number+' \nГород засыпает...'; 
+                  sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:message});
+                  //был изгнан игрок № , Город засыпает...
+                  //emit kick game.players.find((player)=>{player.voteIn.length===maxVotes})
+
+                  resetVoting(game);
+                  game.phase = gamePhases.NIGHT;
+                  game.remainingTime = 3;
+                }
+                else{
+                sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:'Игроки набрали равное количество голосов, переголосование...'});
+                game.remainingTime = 3;
+                 game.players.forEach((player)=>{
+                    player.myVote = -1;
+                    if(player.voteIn.length === maxVotes){game.voting.playersToVote.push(player.number);};
+                    player.voteIn = [];
+                  })
+                  game.voting.isRevoting++;
+                }
+              }
+              break;
+            //переголосований слишком много, спросим исключить двоих?
+            case 2:
+              sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:'Игроки набрали равное количество голосов. Исключить всех?'});
+              game.remainingTime = 3;
+                game.voting.isRevoting++;
+              break;
+              //результат
+            case 3:
+              let countOfVotesOfExludingBoth=0;
+              game.players.forEach(player=>{
+                player.myVote ===-2?countOfVotesOfExludingBoth++:countOfVotesOfExludingBoth;
+              });
+              if(countOfVotesOfExludingBoth>(game.players.filter(player=>player.isAlive).length-countOfVotesOfExludingBoth)){
+                //emit кик двоих, уходим в ночь
+                //Игроки (номера) были исключены. Город засыпает...
+              }
+              else{
+                // скип, уходим в ночь. 
+                  sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:'Никто не был исключён. Город засыпает...'});
+                //emit уходим в ночь.
+
+              }
+              break;
+          }
           break;
         case gamePhases.NIGHT:
-          game.remainingTime=30;
-
+          game.remainingTime=8;//30
+          //emitы для шерифа, дона разрешение на проверки, мафия выбирает кого убить
         break;
       }
-
-
-
     }
   })
 }
+setInterval(gameTick,1000);
 io.on('connection', socket => {
 
   //При подключении делимся со всеми сокета информацией о комнатах.
@@ -249,7 +372,7 @@ io.on('connection', socket => {
           startGame(roomID,clients);
           break;
         case ACTIONS.MA.RESTART_GAME:
-          restartGame(roomID);
+          restartGame(roomID,clients);
           break;
         case ACTIONS.MA.PAUSE_GAME:
           pauseGame(roomID);
@@ -270,37 +393,46 @@ io.on('connection', socket => {
     }
   });
 function startGame(roomID, clients){
-  
   initGame(roomID,clients);
+  games[roomID].state= gameStates.GAME_ON;
+  sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_STATE,{state:gameStates.GAME_ON});
   //emit уведомление о ролях
   //timeout emit на включение вебок для мафии
   //timeout emit на выключение.
 }
 
-function restartGame(roomID){
+function restartGame(roomID,clients){
   finishGame(roomID);
-  startGame(roomID);
+  startGame(roomID,clients);
+  games[roomID].state= gameStates.GAME_ON;
+  sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_STATE,{state:gameStates.GAME_ON});
 }
 
 function pauseGame(roomID){
+  games[roomID].state= gameStates.IS_PAUSED;
+  sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_STATE,{state:gameStates.IS_PAUSED});
   //clearInterval gameloop
 }
 
 function resumeGame(roomID){
+  games[roomID].state= gameStates.GAME_ON;
+  sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_STATE,{state:gameStates.GAME_ON});
   //Interval gameloop
 }
 
-function finishGame(roomID,clients){
-  console.log(`players:${JSON.stringify(players)}\ngames:${JSON.stringify(games)}`);
-  clients.forEach(client=>{
-    delete players[getMailByClient(client)];
-  });
+function finishGame(roomID){
+  games[roomID].state= gameStates.IDLE;
+  sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_STATE,{state:gameStates.IDLE});
   delete games[roomID];
-  console.log(`players:${JSON.stringify(players)}\ngames:${JSON.stringify(games)}`);
   //emit уведомление о завершении
   //delete users role, number, data и прочее...
 }
-
+const putToVoteHandler = ({playerNumber:playerNumber,roomID:roomID}) =>{
+  games[roomID]?.voting?.playersToVote.push(playerNumber);
+  //TO DO: ДОДЕЛАТЬ!!!
+  sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,{playersToVote:games[roomID]?.voting?.playersToVote})
+}
+  socket.on(ACTIONS.PLAYERS_ACTION.PUT_TO_VOTE,putToVoteHandler)
   //Функция для выхода из комнаты
   function leaveRoom() {
     console.log("Socket disconnected!");

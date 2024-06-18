@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { activate } from 'firebase/remote-config';
+const {roles,gamePhases,gameStates} = require('../mafiavariables');
 
 export const LOCAL_VIDEO = 'LOCAL_VIDEO';
 
@@ -34,7 +35,6 @@ export default function useWebRTC(roomID) {
     [LOCAL_VIDEO]: null,
   });
 
-  const playersInfo = useRef({});
   const { user } = useAuth();
   const [userData, setUserData] = useState(null);
   useEffect(() => {
@@ -64,8 +64,7 @@ export default function useWebRTC(roomID) {
           userData,
         }); 
     }
-  },userData)
-
+  },[userData])
 
   // useEffect(()=>{
   //   socket.on(ACTIONS.TEST, ({clients,roomID}) =>{
@@ -255,7 +254,70 @@ export default function useWebRTC(roomID) {
   }, [addNewClient,roomID]);
 
   
+  const [message,setMessage] = useState('');
+  useEffect(()=>{
+    socket.on(ACTIONS.GAME_EVENT.MESSAGE,(({mes:message})=>{
+      setMessage(message);
+      setTimeout(()=>{setMessage('')},3000);
+    }));
+  },[message]);
   
+  const [remainingTime,setRemainingTime] = useState(0);
+  useEffect(()=>{
+    socket.on(ACTIONS.GAME_EVENT.SHARE_REMAINING_TIME,({remTime:remTime})=>{
+      setRemainingTime(remTime);
+    });
+  },[remainingTime]);
+
+  const [currentTurnPlayerNumber,setCurrentTurnPlayerNumber] = useState(0);
+  useEffect(()=>{
+    socket.on(ACTIONS.GAME_EVENT.SHARE_CURRENT_TURN_PLAYER,({curTurnPlayerNumber:curTurnPlayerNumber})=>{
+      setCurrentTurnPlayerNumber(curTurnPlayerNumber);
+    });
+  },[currentTurnPlayerNumber])
+  const [gamePhase,setGamePhase] = useState('');
+  useEffect(()=>{
+    socket.on(ACTIONS.GAME_EVENT.SHARE_PHASE,({phase:phase})=>{
+      setGamePhase(phase);
+    });
+      },[gamePhase])
+      const [gameState,setGameState] = useState('idle');
+  useEffect(()=>{
+    socket.on(ACTIONS.GAME_EVENT.SHARE_STATE,({state:state})=>{
+      setGameState(state);});    
+  },[gameState])
+  const [playersInfo,setPlayersInfo] = useState({});
+useEffect(()=>{
+socket.on(ACTIONS.GAME_EVENT.SHARE_PLAYERS,({players:players})=>{
+  setPlayersInfo(players);});
+},[playersInfo])
+
+const [myClientID,setMyClientID] = useState('');
+useEffect(()=>{
+  setMyClientID(socket.id);
+},[socket.id])
+
+const [myPutUpVotePlayerNumber,setMyPutUpVotePlayerNumber] = useState(0);
+useEffect(()=>{
+  if(gamePhase===gamePhases.NIGHT){
+    setMyPutUpVotePlayerNumber(0);
+  }
+},[myClientID,myPutUpVotePlayerNumber,currentTurnPlayerNumber])
+useEffect(()=>{
+socket.on(ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,({players:players})=>{
+  setPlayersInfo(players);});
+},[playersInfo])
+  const putUpForVotePlayer = useCallback((playerNumber)=>{
+    console.log(playerNumber);
+    setMyPutUpVotePlayerNumber(playerNumber);
+    // socket.emit(ACTIONS.PLAYERS_ACTION.PUT_TO_VOTE,{playerNumber:playerNumber,roomID:roomID});
+  },[myPutUpVotePlayerNumber]);
+  const[playersToVote,setPlayersToVote] = useState([]);
+  useEffect(()=>{
+    socket.on(ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,({playersToVote:playersToVote})=>{
+      setPlayersToVote(playersToVote);
+    })
+  },[playersToVote]);
   const [isCamAllowed,setIsCamAllowed] = useState(true);
   const [isMicAllowed,setIsMicAllowed] = useState(true);
   const [isCamEnabled,setIsCamEnabled] = useState(true);
@@ -263,7 +325,6 @@ export default function useWebRTC(roomID) {
   const [isCamPermitted,setIsCamPermitted] = useState(true);
   const [isMicPermitted,setIsMicPermitted] = useState(true);
   const [isRejected,setIsRejected] = useState('');
-
   // Добавляем useEffect для обработки включения/выключения камеры/микрофона
     const disableMyCamToAll = () =>{
       const videoTrack = localMediaStream.current.getVideoTracks()[0];
@@ -458,7 +519,6 @@ export default function useWebRTC(roomID) {
   const provideMediaRef = useCallback((id, node) => {
     peerMediaElements.current[id] = node;
   }, [peerMediaElements]);
-
   //test
   return {
     clients,
@@ -466,12 +526,14 @@ export default function useWebRTC(roomID) {
     toggleMic,toggleCam,
     MAtoggleMic,MAtoggleCam,
     handlePause,handleContinue,handleRestart,handleEndGame,handleStart,
-    isModerator,
+    isModerator,myClientID,
     isCamAllowed,
     isMicAllowed,
     isCamEnabled,
     isMicEnabled,
     isRejected,
+    message,remainingTime,currentTurnPlayerNumber,gamePhase,gameState,playersInfo,
+    putUpForVotePlayer,myPutUpVotePlayerNumber,playersToVote,
   };
 
 }

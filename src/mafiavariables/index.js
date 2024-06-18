@@ -1,9 +1,10 @@
 const roles = {
-    GAME_MASTER: 'game-master',
-    MAFIA: 'mafia',
-    CITITZEN: 'citizen',
-    SHERIFF: 'sheriff',
-    DON:'don',
+    GAME_MASTER: 'ВЕДУЩИЙ',
+    SPECTATOR:'НАБЛЮДАТЕЛЬ',
+    MAFIA: 'МАФИЯ',
+    CITITZEN: 'МИРНЫЙ',
+    SHERIFF: 'ШЕРИФ',
+    DON:'ДОН МАФИИ',
   }
   const gameStates = {
     IDLE:'idle',
@@ -11,8 +12,9 @@ const roles = {
     GAME_ON: 'game-on',
   }
   const gamePhases = {
-    DAY:'day',
-    NIGHT: 'night',
-    VOTING: 'voting',
+    DAY:'День',
+    NIGHT: 'Ночь',
+    VOTING: 'Голосование',
+    FAMILIARZATION_NIGHT:'Ознакомительная ночь',
   }
 module.exports = {roles, gameStates, gamePhases};

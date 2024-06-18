@@ -26,14 +26,28 @@ const ACTIONS = {
     }, 
     // действия игроков 
     PLAYERS_ACTION:{
+    PUT_TO_VOTE:'put_to_vote',
     VOTE:'vote',
     SHERIFF_CHECK:'sheriff-check',
     DON_CHECK:'don-check',
-    MAFIA_SHOT:'mafia-shot'},
+    MAFIA_SHOT:'mafia-shot'
+    },
     CLIENT_INFO: 'client-info',
     GAME_EVENT:{
-        SEND_ROLE:'send-role',
-    }
+        SHARE_REMAINING_TIME:'share-remaining-time',
+        SHARE_PLAYERS:'share-players',
+        SHARE_PHASE:'share-phase',
+        SHARE_STATE:'share-state',
+        SHARE_CIRCLE_COUNT:'share-circle-count',
+        SHARE_ROLE:'share-role',
+        SHARE_ROLES:'share-roles',
+        SHARE_PUT_UP_FOR_VOTE:'share-put-up-for-vote',
+        SHARE_PERSONAL_INFO:'share-personal-info',
+        SHARE_CURRENT_TURN_PLAYER:'share-current-turn-player',
+        PASS_TO_THE_NEXT_PLAYER:'pass-to-the-next-player',
+        VOTE_FOR_THE_PLAYER: 'vote-for-the-player',
+        MESSAGE: 'message',
+    },
     // TEST: 'test'
 };
 
