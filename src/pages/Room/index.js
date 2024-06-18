@@ -78,10 +78,11 @@ export default function Room() {
           //сделать посишн релатив и посишн абсолют внутри управления у локал видео участника и у модератора
           
         <div  style={{display:(!playersInfo[clientID===LOCAL_VIDEO?myClientID:clientID]?.isAlive)&&gameState===gameStates.GAME_ON?'none':'block'}} key={clientID} className={videoLayout()} id={clientID}>
-          <div className='player-info'>{console.log(JSON.stringify(playersInfo))}
+          <div className='player-info'>
           <p className='player-name'>Игрок {playersInfo[clientID===LOCAL_VIDEO?myClientID:clientID]?.number}.{playersInfo[clientID===LOCAL_VIDEO?myClientID:clientID]?.gender==='Мужской'?'Господин':'Госпожа'} {playersInfo[clientID===LOCAL_VIDEO?myClientID:clientID]?.name}</p>
           <p className='player-role'>{playersInfo[clientID===LOCAL_VIDEO?myClientID:clientID]?.role}</p>
           </div>
+          {/* {console.log(`playersInfo:${JSON.stringify(playersInfo)}\ngameState===gameStates:${gameState===gameStates.IDLE}\ngameStates:${JSON.stringify(gameStates)}`)} */}
           <video
             width='100%'
             height='100%'
@@ -119,11 +120,7 @@ export default function Room() {
       <p>Таймер: <span id="timer">{remainingTime}</span></p>
       <p>Круг: 1. {gamePhase}</p>
       <p>Ход игрока: {currentTurnPlayerNumber}.{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.gender==='Мужской'?'Господин ':'Госпожа '}{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.name}</p>
-      <p>Выставлены на голосование: {()=>{
-        let listToVotePlayers = ''
-        playersToVote.forEach(player=>{return listToVotePlayers+player+' '})
-        return listToVotePlayers;
-      }}</p>
+      <p>Выставлены на голосование: {playersToVote}</p>
       <div>
           <h3>Мои заметки:</h3>
           <textarea id="notes" placeholder="Оставьте здесь свои заметки..." rows="10" cols="50"></textarea>
@@ -134,7 +131,7 @@ export default function Room() {
       <p>Таймер: <span id="timer">Игра приостановлена</span></p>
       <p>Круг: 1. {gamePhase}</p>
       <p>Ход игрока: {currentTurnPlayerNumber}.{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.gender==='Мужской'?'Господин ':'Госпожа '}{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.name}</p>
-      <p>Выставлены на голосование: {JSON.stringify(playersToVote)}</p>
+      <p>Выставлены на голосование: {playersToVote}</p>
       <div>
           <h3>Мои заметки:</h3>
           <textarea id="notes" placeholder="Оставьте здесь свои заметки..." rows="10" cols="50"></textarea>

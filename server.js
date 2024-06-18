@@ -87,6 +87,62 @@ function sendEmitToAll(game,action,sendedObject){
     io.to(player.clientID).emit(action,sendedObject);
   });
 }
+function playerReconnected(mail, clientID){
+  const game = Object.values(games).find(game=>{
+    return game.players.some(player=>{return player.mail===mail})
+  });
+  if(game){
+  const player = game.players.find(player=>{return player.mail===mail}).clientID = clientID;
+  sharePlayers(game);
+  }
+}
+function sharePlayers(game){
+  
+  game.players.forEach(playerToEmit=>{
+    let players = {};
+    if(playerToEmit.role===roles.GAME_MASTER){
+      game.players.forEach(player=>{
+        players[player.clientID]=
+        {
+          clientID:player.clientID,
+          name:usersData[player.clientID].name,
+          gender:usersData[player.clientID].gender,
+          number:player.number,
+          role:player.role,
+          isAlive:player.isAlive,
+        }
+      })
+    }
+    else if(playerToEmit.role===(roles.MAFIA||roles.DON)){
+      game.players.forEach(player=>{
+      players[player.clientID]=
+      {
+        clientID:player.clientID,
+        name:usersData[player.clientID].name,
+        gender:usersData[player.clientID].gender,
+        number:player.number,
+        role:playerToEmit.clientID===player.clientID?player.role:(player.role===(roles.MAFIA||roles.DON))?player.role:'',
+        isAlive:player.isAlive,
+      }
+      })
+    }
+    else{
+      game.players.forEach(player=>{
+      players[player.clientID]=
+      {
+        clientID:player.clientID,
+        name:usersData[player.clientID].name,
+        gender:usersData[player.clientID].gender,
+        number:player.number,
+        role:playerToEmit.clientID===player.clientID?player.role:player.role===roles.GAME_MASTER?player.role:'',
+        isAlive:player.isAlive,
+      }
+      })
+    }
+    //добавить обновление ролей для проверок дона и шерифа
+    io.to(playerToEmit.clientID).emit(ACTIONS.GAME_EVENT.SHARE_PLAYERS,{players:players})
+  })
+}
 function initGame(roomID,clients){
   const countOfPlayers =8;//clients.lenght;
   if (countOfPlayers<7||countOfPlayers>12) {return []}
@@ -113,7 +169,7 @@ function initGame(roomID,clients){
   
   games[roomID] = {
       moderator:moderator,
-      remainingTime:3,
+      remainingTime:60,
       state: gameStates.GAME_ON,
       phase:gamePhases.DAY,
       circleCount:0,
@@ -128,7 +184,7 @@ function initGame(roomID,clients){
         isRevoting:0,
       }
     }
-  
+    sharePlayers(games[roomID]);
   // console.log(`\n===================\nusersData:${JSON.stringify(usersData)}\n`);
   // console.log(`games:${JSON.stringify(games)}`);
 
@@ -136,52 +192,8 @@ function initGame(roomID,clients){
   sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_PHASE,{phase:games[roomID].phase});
   sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_CURRENT_TURN_PLAYER,{curTurnPlayerNumber:games[roomID].currentTurnPlayerNumber});
   
-  games[roomID].players.forEach(playerToEmit=>{
-    let players = {};
-    if(playerToEmit.role===roles.GAME_MASTER){
-      games[roomID].players.forEach(player=>{
-        players[player.clientID]=
-        {
-          clientID:player.clientID,
-          name:usersData[player.clientID].name,
-          gender:usersData[player.clientID].gender,
-          number:player.number,
-          role:player.role,
-          isAlive:player.isAlive,
-        }
-      })
-    }
-    else if(playerToEmit.role===(roles.MAFIA||roles.DON)){
-      games[roomID].players.forEach(player=>{
-      players[player.clientID]=
-      {
-        clientID:player.clientID,
-        name:usersData[player.clientID].name,
-        gender:usersData[player.clientID].gender,
-        number:player.number,
-        role:playerToEmit.clientID===player.clientID?player.role:(player.role===(roles.MAFIA||roles.DON))?player.role:'',
-        isAlive:player.isAlive,
-      }
-      })
-    }
-    else{
-      games[roomID].players.forEach(player=>{
-      players[player.clientID]=
-      {
-        clientID:player.clientID,
-        name:usersData[player.clientID].name,
-        gender:usersData[player.clientID].gender,
-        number:player.number,
-        role:playerToEmit.clientID===player.clientID?player.role:player.role===roles.GAME_MASTER?player.role:'',
-        isAlive:player.isAlive,
-      }
-      })
-    }
-    io.to(playerToEmit.clientID).emit(ACTIONS.GAME_EVENT.SHARE_PLAYERS,{players:players})
-  })
 }
 
-//TO DO: function shareGameState emit.
 function gameTick(){
   Object.values(games).forEach(game=>{
     if((game.state===gameStates.IDLE)||(game.state===gameStates.IS_PAUSED)){return}
@@ -193,7 +205,7 @@ function gameTick(){
 
       switch (game.phase){
         case gamePhases.DAY:
-          game.remainingTime=30;//60
+          game.remainingTime=60;//60
           //человек договорил, записываем его к людям, которые поговорили и передаём ход следующему
           game.talkedPlayers.push(game.currentTurnPlayerNumber);
           game.currentTurnPlayerNumber=++game.currentTurnPlayerNumber;
@@ -211,6 +223,7 @@ function gameTick(){
             game.voting.playersToVote.forEach((ptv)=>{message+' '+ptv});
             message = message + '\nГолосование!';
             sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:message});
+            game.remainingTime=3;
           }
             //TO DO: emit на обновление состояния, разрешение поговорить
             
@@ -429,7 +442,6 @@ function finishGame(roomID){
 }
 const putToVoteHandler = ({playerNumber:playerNumber,roomID:roomID}) =>{
   games[roomID]?.voting?.playersToVote.push(playerNumber);
-  //TO DO: ДОДЕЛАТЬ!!!
   sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,{playersToVote:games[roomID]?.voting?.playersToVote})
 }
   socket.on(ACTIONS.PLAYERS_ACTION.PUT_TO_VOTE,putToVoteHandler)
@@ -516,6 +528,8 @@ const putToVoteHandler = ({playerNumber:playerNumber,roomID:roomID}) =>{
     // Если email, отключаем старый токен
     console.log('New user added:', usersData);
     usersData[peerid] = userData;
+    
+    if (emailExists) {playerReconnected(userData.email,peerid);}
   })
   socket.on(ACTIONS.ENABLE_CAMERA, ({ peerID }) => {
     io.emit(ACTIONS.ENABLE_CAMERA, { peerID });

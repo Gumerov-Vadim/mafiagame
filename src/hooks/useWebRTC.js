@@ -303,19 +303,17 @@ useEffect(()=>{
     setMyPutUpVotePlayerNumber(0);
   }
 },[myClientID,myPutUpVotePlayerNumber,currentTurnPlayerNumber])
-useEffect(()=>{
-socket.on(ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,({players:players})=>{
-  setPlayersInfo(players);});
-},[playersInfo])
   const putUpForVotePlayer = useCallback((playerNumber)=>{
-    console.log(playerNumber);
     setMyPutUpVotePlayerNumber(playerNumber);
-    // socket.emit(ACTIONS.PLAYERS_ACTION.PUT_TO_VOTE,{playerNumber:playerNumber,roomID:roomID});
+    socket.emit(ACTIONS.PLAYERS_ACTION.PUT_TO_VOTE,{playerNumber:playerNumber,roomID:roomID});
   },[myPutUpVotePlayerNumber]);
   const[playersToVote,setPlayersToVote] = useState([]);
   useEffect(()=>{
     socket.on(ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,({playersToVote:playersToVote})=>{
-      setPlayersToVote(playersToVote);
+      let stringPlayersToVote = '';
+      playersToVote.forEach(player=>{console.log(player); stringPlayersToVote = stringPlayersToVote+player+' ';})
+      console.log(`playerToVoteList:${playersToVote}\nString:${stringPlayersToVote}`);
+      setPlayersToVote(stringPlayersToVote);
     })
   },[playersToVote]);
   const [isCamAllowed,setIsCamAllowed] = useState(true);
