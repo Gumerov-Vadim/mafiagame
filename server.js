@@ -82,6 +82,9 @@ function resetPlayersVotes(game){
     player.myVote=-1;
   })
 }
+function isAlivePlayer(player){
+  return (player.role!==roles.GAME_MASTER)&&(player.isAlive);
+}
 function sendEmitToAll(game,action,sendedObject){
   game.players.forEach(player=>{
     io.to(player.clientID).emit(action,sendedObject);
@@ -218,11 +221,16 @@ function gameTick(){
           game.remainingTime=3;//60
           //человек договорил, записываем его к людям, которые поговорили и передаём ход следующему
           game.talkedPlayers.push(game.currentTurnPlayerNumber);
-          game.currentTurnPlayerNumber=++game.currentTurnPlayerNumber;
+          do{
+            game.currentTurnPlayerNumber=++game.currentTurnPlayerNumber;
+          //если выходим за список игроков ставим указатель на первого игрока
           if(!(game.players.some(player=>{return player.number===game.currentTurnPlayerNumber}))){game.currentTurnPlayerNumber=1}
+          } while(game.players.find(player=>{return (player.number===game.currentTurnPlayerNumber)&&(!player.isAlive)}))
+            //пропускаем мёртвых игроков
+          
           sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_CURRENT_TURN_PLAYER,{curTurnPlayerNumber:game.currentTurnPlayerNumber});
-           //когда среди игроков не остаётся таких, которые не поговорили переходим к голосованию
-          if(game.players.every(player=>{return game.talkedPlayers.includes(player.number)||player.role===roles.GAME_MASTER})){
+           //когда среди живых игроков не остаётся таких, которые не поговорили переходим к голосованию
+          if(game.players.every(player=>{return game.talkedPlayers.includes(player.number)||player.role===roles.GAME_MASTER||!player.isAlive})){
           //все поговорили-> очищаем список и запускаем голосование
             game.talkedPlayers = [];
             game.phase = gamePhases.VOTING;
@@ -246,16 +254,16 @@ function gameTick(){
             default:
               
               if(game.voting.playersToVote.length<2){
-                //Если остался 1 человек, все непроголосовавшие игроки голосуют в него.
+                //Если остался 1 человек, все непроголосовавшие живые игроки голосуют в него.
                 if(game.voting.playersToVote.length===1){
                   let lastVotedPlayerNumber = game.voting.playersToVote.pop();
                   console.log(`lastVotedPlayerNumber:${lastVotedPlayerNumber}`);
                   game.players.forEach((player)=>{
-                    if(player.role!==roles.GAME_MASTER){player.myVote = player.myVote===-1?lastVotedPlayerNumber:player.myVote;}
+                    if(isAlivePlayer(player)){player.myVote = player.myVote===-1?lastVotedPlayerNumber:player.myVote;}
                   });
                   let lastVotedPlayer = game.players.find((player)=>{return player.number===lastVotedPlayerNumber});
                   game.players.forEach((player)=>{
-                    if(player.role!==roles.GAME_MASTER){
+                    if(isAlivePlayer(player)){
                     if(player.myVote===lastVotedPlayerNumber){
                       lastVotedPlayer.votedIn.push(player.number);
                     }}
@@ -264,11 +272,15 @@ function gameTick(){
                 //считаем голоса
                 let maxVotes = -1;
                 game.players.forEach((player)=>{
+                  if(isAlivePlayer(player)){
                   maxVotes = player.votedIn.length>maxVotes?player.votedIn.length:maxVotes;
+                  }
                 });
                 let countMaxVotedPlayers = 0;
                 game.players.forEach((player)=>{
+                  if(isAlivePlayer){
                   countMaxVotedPlayers = player.votedIn.length===maxVotes?++countMaxVotedPlayers:countMaxVotedPlayers;
+                }
                 });
 
                 //результат голосования
@@ -279,15 +291,11 @@ function gameTick(){
                   game.remainingTime = 3;
                 }
                 else if(countMaxVotedPlayers===1){
-                  //TO DO: emit кик, уходим в ночь
                   const playerToReject = game.players.find(player=>{return player.votedIn.length===maxVotes});
                   const message = 'был изгнан игрок №'+playerToReject.number+' \nГород засыпает...'; 
                   playerToReject.isAlive = false;
                   sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:message});
                   sharePlayers(game);
-                  //был изгнан игрок № , Город засыпает...
-                  //emit kick game.players.find((player)=>{player.voteIn.length===maxVotes})
-
                   resetVoting(game);
                   game.phase = gamePhases.NIGHT;
                   game.remainingTime = 3;
