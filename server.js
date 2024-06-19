@@ -2,12 +2,20 @@ const path = require('path');
 const express = require('express');
 const app = express();
 const server = require('http').createServer(app);
-const io = require('socket.io')(server);
+const io = require('socket.io')(server,{
+  cors:{
+    origin:[
+      'http://192.168.1.80'
+    ],
+    methods:["GET","POST"]
+  }
+});
 const {version, validate} = require('uuid');
 const {roles,gamePhases,gameStates} = require('./src/mafiavariables');
 
 const ACTIONS = require('./src/socket/actions');
 const { copyFileSync } = require('fs');
+const { METHODS } = require('http');
 const PORT = process.env.PORT || 3001;
 
 //Возвращает список всех комнат, которые сущестувют
