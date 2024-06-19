@@ -254,6 +254,7 @@ export default function useWebRTC(roomID) {
   }, [addNewClient,roomID]);
 
   
+  //Вывод сообщения с сервера
   const [message,setMessage] = useState('');
   useEffect(()=>{
     socket.on(ACTIONS.GAME_EVENT.MESSAGE,(({mes:message})=>{
@@ -262,51 +263,65 @@ export default function useWebRTC(roomID) {
     }));
   },[message]);
   
+  //Оставшееся время
   const [remainingTime,setRemainingTime] = useState(0);
   useEffect(()=>{
     socket.on(ACTIONS.GAME_EVENT.SHARE_REMAINING_TIME,({remTime:remTime})=>{
       setRemainingTime(remTime);
     });
   },[remainingTime]);
-
   const [currentTurnPlayerNumber,setCurrentTurnPlayerNumber] = useState(0);
+
+  //получаем номер игрока, которого сейчас ход
   useEffect(()=>{
     socket.on(ACTIONS.GAME_EVENT.SHARE_CURRENT_TURN_PLAYER,({curTurnPlayerNumber:curTurnPlayerNumber})=>{
       setCurrentTurnPlayerNumber(curTurnPlayerNumber);
     });
   },[currentTurnPlayerNumber])
+  
+  //Смена фазы игры
   const [gamePhase,setGamePhase] = useState('');
   useEffect(()=>{
     socket.on(ACTIONS.GAME_EVENT.SHARE_PHASE,({phase:phase})=>{
       setGamePhase(phase);
     });
-      },[gamePhase])
-      const [gameState,setGameState] = useState('idle');
+  },[gamePhase]);
+
+    //смена состояния игры
+  const [gameState,setGameState] = useState('idle');
   useEffect(()=>{
     socket.on(ACTIONS.GAME_EVENT.SHARE_STATE,({state:state})=>{
-      setGameState(state);});    
-  },[gameState])
+      setGameState(state);});
+    },[gameState])
+
+  //получение общей информации о игроках
   const [playersInfo,setPlayersInfo] = useState({});
-useEffect(()=>{
-socket.on(ACTIONS.GAME_EVENT.SHARE_PLAYERS,({players:players})=>{
-  setPlayersInfo(players);});
-},[playersInfo])
+  useEffect(()=>{
+  socket.on(ACTIONS.GAME_EVENT.SHARE_PLAYERS,({players:players})=>{
+    setPlayersInfo(players);});
+  },[playersInfo])
 
-const [myClientID,setMyClientID] = useState('');
-useEffect(()=>{
-  setMyClientID(socket.id);
-},[socket.id])
+  //мой client id
+  const [myClientID,setMyClientID] = useState('');
+  useEffect(()=>{
+    setMyClientID(socket.id);
+  },[socket.id])
 
-const [myPutUpVotePlayerNumber,setMyPutUpVotePlayerNumber] = useState(0);
-useEffect(()=>{
-  if(gamePhase===gamePhases.NIGHT){
-    setMyPutUpVotePlayerNumber(0);
-  }
-},[myClientID,myPutUpVotePlayerNumber,currentTurnPlayerNumber])
+  //Ночью мой выставленный игрок обнуляется
+  const [myPutUpVotePlayerNumber,setMyPutUpVotePlayerNumber] = useState(0);
+  useEffect(()=>{
+    if(gamePhase===gamePhases.NIGHT){
+      setMyPutUpVotePlayerNumber(0);
+    }
+  },[myClientID,myPutUpVotePlayerNumber,currentTurnPlayerNumber])
+    
+  //Выставить на голсование
   const putUpForVotePlayer = useCallback((playerNumber)=>{
     setMyPutUpVotePlayerNumber(playerNumber);
     socket.emit(ACTIONS.PLAYERS_ACTION.PUT_TO_VOTE,{playerNumber:playerNumber,roomID:roomID});
   },[myPutUpVotePlayerNumber]);
+  
+  //Получение списка игроков выставленных на голосование
   const[playersToVote,setPlayersToVote] = useState([]);
   useEffect(()=>{
     socket.on(ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,({playersToVote:playersToVote})=>{
@@ -316,6 +331,14 @@ useEffect(()=>{
       setPlayersToVote(stringPlayersToVote);
     })
   },[playersToVote]);
+  
+  //Получаем текущего игрока за которого мы голосуем
+  const[currentPlayerToVote,setCurrentPlayerToVote] = useState(0);
+  useEffect(()=>{
+    socket.on(roles.GAME_MASTER,ACTIONS.GAME_EVENT.VOTE_FOR_THE_PLAYER,({playerToVote:playerToVote})=>{
+      setCurrentPlayerToVote(playerToVote);
+    });
+  },[currentPlayerToVote]);
   const [isCamAllowed,setIsCamAllowed] = useState(true);
   const [isMicAllowed,setIsMicAllowed] = useState(true);
   const [isCamEnabled,setIsCamEnabled] = useState(true);
@@ -531,7 +554,7 @@ useEffect(()=>{
     isMicEnabled,
     isRejected,
     message,remainingTime,currentTurnPlayerNumber,gamePhase,gameState,playersInfo,
-    putUpForVotePlayer,myPutUpVotePlayerNumber,playersToVote,
+    putUpForVotePlayer,myPutUpVotePlayerNumber,playersToVote,currentPlayerToVote,
   };
 
 }

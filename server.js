@@ -87,6 +87,16 @@ function sendEmitToAll(game,action,sendedObject){
     io.to(player.clientID).emit(action,sendedObject);
   });
 }
+function sendEmitToPlayerWithRole(game,role,action,sendedObject){
+  game.players.forEach(player=>{
+    if(player.role===role){io.to(player.clientID).emit(action,sendedObject);}
+  });
+}
+function sendEmitToPlayerUnlessRole(game,role,action,sendedObject){
+  game.players.forEach(player=>{
+    if(player.role!==role){io.to(player.clientID).emit(action,sendedObject);}
+  });
+}
 function playerReconnected(mail, clientID){
   const game = Object.values(games).find(game=>{
     return game.players.some(player=>{return player.mail===mail})
@@ -169,7 +179,7 @@ function initGame(roomID,clients){
   
   games[roomID] = {
       moderator:moderator,
-      remainingTime:60,
+      remainingTime:3,
       state: gameStates.GAME_ON,
       phase:gamePhases.DAY,
       circleCount:0,
@@ -205,22 +215,20 @@ function gameTick(){
 
       switch (game.phase){
         case gamePhases.DAY:
-          game.remainingTime=60;//60
+          game.remainingTime=3;//60
           //человек договорил, записываем его к людям, которые поговорили и передаём ход следующему
           game.talkedPlayers.push(game.currentTurnPlayerNumber);
           game.currentTurnPlayerNumber=++game.currentTurnPlayerNumber;
           if(!(game.players.some(player=>{return player.number===game.currentTurnPlayerNumber}))){game.currentTurnPlayerNumber=1}
           sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_CURRENT_TURN_PLAYER,{curTurnPlayerNumber:game.currentTurnPlayerNumber});
-          // sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,game.voting.playersToVote);
-          //когда среди игроков не остаётся таких, которые не поговорили переходим к голосованию
+           //когда среди игроков не остаётся таких, которые не поговорили переходим к голосованию
           if(game.players.every(player=>{return game.talkedPlayers.includes(player.number)||player.role===roles.GAME_MASTER})){
-            console.log(`talkedPlayers:${game.talkedPlayers}\ngame.players:${JSON.stringify(game.players)}`);
           //все поговорили-> очищаем список и запускаем голосование
             game.talkedPlayers = [];
             game.phase = gamePhases.VOTING;
             
             let message ='Все поговорили.\nВыставлены игроки под номерами:\n';
-            game.voting.playersToVote.forEach((ptv)=>{message+' '+ptv});
+            game.voting.playersToVote.forEach((ptv)=>{message = message+' '+ptv});
             message = message + '\nГолосование!';
             sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:message});
             game.remainingTime=3;
@@ -236,21 +244,22 @@ function gameTick(){
           switch(game.voting.isRevoting){
             
             default:
-              //emit toVote game.voting.playersToVote.pop();
               
               if(game.voting.playersToVote.length<2){
                 //Если остался 1 человек, все непроголосовавшие игроки голосуют в него.
                 if(game.voting.playersToVote.length===1){
                   let lastVotedPlayerNumber = game.voting.playersToVote.pop();
+                  console.log(`lastVotedPlayerNumber:${lastVotedPlayerNumber}`);
                   game.players.forEach((player)=>{
-                    player.myVote = player.myVote===-1?lastVotedPlayerNumber:player.myVote;
+                    if(player.role!==roles.GAME_MASTER){player.myVote = player.myVote===-1?lastVotedPlayerNumber:player.myVote;}
                   });
-                  let lastVotedPlayer = game.players.find((player)=>{player.number===lastVotedPlayerNumber});
+                  let lastVotedPlayer = game.players.find((player)=>{return player.number===lastVotedPlayerNumber});
                   game.players.forEach((player)=>{
+                    if(player.role!==roles.GAME_MASTER){
                     if(player.myVote===lastVotedPlayerNumber){
-                      lastVotedPlayer.voteIn = player.number;
-                    }
-                  })
+                      lastVotedPlayer.votedIn.push(player.number);
+                    }}
+                  });
                 }
                 //считаем голоса
                 let maxVotes = -1;
@@ -259,11 +268,11 @@ function gameTick(){
                 });
                 let countMaxVotedPlayers = 0;
                 game.players.forEach((player)=>{
-                  countMaxVotedPlayers = player.votedIn.length===maxVotes?countMaxVotedPlayers++:countMaxVotedPlayers;
+                  countMaxVotedPlayers = player.votedIn.length===maxVotes?++countMaxVotedPlayers:countMaxVotedPlayers;
                 });
-                
+
                 //результат голосования
-                if(countMaxVotedPlayers===0){
+                if(countMaxVotedPlayers===0||maxVotes===0){
                   sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:'Никто не был изгнан.\nГород засыпает...'});
                   resetVoting(game);
                   game.phase = gamePhases.NIGHT;
@@ -271,8 +280,11 @@ function gameTick(){
                 }
                 else if(countMaxVotedPlayers===1){
                   //TO DO: emit кик, уходим в ночь
-                  const message = 'был изгнан игрок №'+game.players.find(player=>{player.voteIn.length===maxVotes}).number+' \nГород засыпает...'; 
+                  const playerToReject = game.players.find(player=>{return player.votedIn.length===maxVotes});
+                  const message = 'был изгнан игрок №'+playerToReject.number+' \nГород засыпает...'; 
+                  playerToReject.isAlive = false;
                   sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:message});
+                  sharePlayers(game);
                   //был изгнан игрок № , Город засыпает...
                   //emit kick game.players.find((player)=>{player.voteIn.length===maxVotes})
 
@@ -290,6 +302,8 @@ function gameTick(){
                   })
                   game.voting.isRevoting++;
                 }
+              }else{
+                sendEmitToPlayerUnlessRole(game,roles.GAME_MASTER,VOTE_FOR_THE_PLAYER,{playerToVote:game.voting.playersToVote.pop()});
               }
               break;
             //переголосований слишком много, спросим исключить двоих?

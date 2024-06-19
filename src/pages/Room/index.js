@@ -27,7 +27,7 @@ export default function Room() {
      isCamAllowed,isMicAllowed,isCamEnabled,isMicEnabled,
      isRejected,
      message,remainingTime,currentTurnPlayerNumber,gamePhase,gameState,playersInfo,
-     putUpForVotePlayer,myPutUpVotePlayerNumber,playersToVote,
+     putUpForVotePlayer,myPutUpVotePlayerNumber,playersToVote,currentPlayerToVote,
     } = useWebRTC(roomID);
   const [testVideo,setTestVideo] = useState(true);
   const test = (index)=>{
@@ -60,6 +60,7 @@ export default function Room() {
   return testVideo?(
     <div>
       {message&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>{message}</FullscreenOverlay>)}
+      {(currentPlayerToVote!==0)&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.5)'><p>Проголосовать за игрока№ {currentTurnPlayerNumber}?</p><Button>Проголосовать!</Button></FullscreenOverlay>)}
       {isRejected&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>{isRejected}<Button style={{marginTop:'20px'}} onClick={() => {navigate(`/`);}}>Вернуться на главную</Button></FullscreenOverlay>)}
       <Navbar/>
       {isModerator&&(
