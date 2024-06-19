@@ -326,8 +326,6 @@ export default function useWebRTC(roomID) {
   useEffect(()=>{
     socket.on(ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,({playersToVote:playersToVote})=>{
       let stringPlayersToVote = '';
-      playersToVote.forEach(player=>{console.log(player); stringPlayersToVote = stringPlayersToVote+player+' ';})
-      console.log(`playerToVoteList:${playersToVote}\nString:${stringPlayersToVote}`);
       setPlayersToVote(stringPlayersToVote);
     })
   },[playersToVote]);
@@ -335,7 +333,7 @@ export default function useWebRTC(roomID) {
   //Получаем текущего игрока за которого мы голосуем
   const[currentPlayerToVote,setCurrentPlayerToVote] = useState(0);
   useEffect(()=>{
-    socket.on(roles.GAME_MASTER,ACTIONS.GAME_EVENT.VOTE_FOR_THE_PLAYER,({playerToVote:playerToVote})=>{
+    socket.on(ACTIONS.GAME_EVENT.VOTE_FOR_THE_PLAYER,({playerToVote:playerToVote})=>{
       setCurrentPlayerToVote(playerToVote);
     });
   },[currentPlayerToVote]);

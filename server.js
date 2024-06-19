@@ -246,9 +246,7 @@ function gameTick(){
           break;
         case gamePhases.VOTING:
           // если 
-          game.remainingTime=10;
-          //emit toVote game.voting.playersToVote.unshift();
-          //пока не останется 1 или 0;
+          game.remainingTime=5;
           switch(game.voting.isRevoting){
             
             default:
@@ -257,7 +255,6 @@ function gameTick(){
                 //Если остался 1 человек, все непроголосовавшие живые игроки голосуют в него.
                 if(game.voting.playersToVote.length===1){
                   let lastVotedPlayerNumber = game.voting.playersToVote.pop();
-                  console.log(`lastVotedPlayerNumber:${lastVotedPlayerNumber}`);
                   game.players.forEach((player)=>{
                     if(isAlivePlayer(player)){player.myVote = player.myVote===-1?lastVotedPlayerNumber:player.myVote;}
                   });
@@ -280,7 +277,7 @@ function gameTick(){
                 game.players.forEach((player)=>{
                   if(isAlivePlayer){
                   countMaxVotedPlayers = player.votedIn.length===maxVotes?++countMaxVotedPlayers:countMaxVotedPlayers;
-                }
+                  }
                 });
 
                 //результат голосования
@@ -311,7 +308,7 @@ function gameTick(){
                   game.voting.isRevoting++;
                 }
               }else{
-                sendEmitToPlayerUnlessRole(game,roles.GAME_MASTER,VOTE_FOR_THE_PLAYER,{playerToVote:game.voting.playersToVote.pop()});
+                sendEmitToPlayerUnlessRole(game,roles.GAME_MASTER,ACTIONS.GAME_EVENT.VOTE_FOR_THE_PLAYER,{playerToVote:game.voting.playersToVote.pop()});
               }
               break;
             //переголосований слишком много, спросим исключить двоих?

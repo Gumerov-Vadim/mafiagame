@@ -60,7 +60,7 @@ export default function Room() {
   return testVideo?(
     <div>
       {message&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>{message}</FullscreenOverlay>)}
-      {(currentPlayerToVote!==0)&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.5)'><p>Проголосовать за игрока№ {currentTurnPlayerNumber}?</p><Button>Проголосовать!</Button></FullscreenOverlay>)}
+      {(currentPlayerToVote!==0)&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'><p style={{fontSize:'24px'}}>Проголосовать за исключение игрока №{currentTurnPlayerNumber}?</p><p style={{fontSize:'24px'}}>{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.name}</p><Button style={{marginTop:'20px'}}>Проголосовать!</Button></FullscreenOverlay>)}
       {isRejected&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>{isRejected}<Button style={{marginTop:'20px'}} onClick={() => {navigate(`/`);}}>Вернуться на главную</Button></FullscreenOverlay>)}
       <Navbar/>
       {isModerator&&(
