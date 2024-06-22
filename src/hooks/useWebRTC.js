@@ -218,12 +218,13 @@ export default function useWebRTC(roomID) {
       try{
       localMediaStream.current = await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: {
-          width: 800,
-          height: 600,
-          // width: 1280,
-          // height: 720,
-        }
+        video:true,
+        // video: {
+        //   width: 800,
+        //   height: 600,
+        //   // width: 1280,
+        //   // height: 720,
+        // }
         // video:false
       });
 

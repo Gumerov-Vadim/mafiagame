@@ -1,0 +1,10 @@
+form{
+    display: flex;
+    flex-direction: column;
+}
+form input{
+    margin: 5px;
+}
+h2{
+    margin: 20px;
+}

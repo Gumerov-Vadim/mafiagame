@@ -25,29 +25,31 @@ export default function Main() {
     return (
         <div ref={rootNode} style={{backgroundColor: `#06266F`,height:'100%',width:'100%',position:'absolute'}}>
                 
-             <Navbar/>
-             <h1>
-                Available Rooms
+             
+            <Navbar style={{position:'fixed'}}/>
+            <div style={{display:'flex',justifyContent:'flex-start',flexDirection:'column',alignItems:'center',height:'100vh',paddingTop:'100px'}}>
+           <h1 style={{margin:'20px'}}>
+                Игровые комнаты
             </h1>
+            <Button onClick={() => {
+                navigate(`/room/${v4()}`);
+            }} style={{margin:'20px'}}>
+                Создать комнату
+            </Button>
             <ul>
                 {rooms.map(roomID => (
                     <li key={roomID}>
-                        {roomID}
                         <Button onClick={() => {
                             navigate(`/room/${roomID}`);
                         }}>
-                            JOIN ROOM
+                            Присоединиться к игре #{roomID.substr(-4)}
                         </Button>
                     </li>
                 ))}
             </ul>
             {console.log(`rooms info:${rooms}`)}
-            <Button onClick={() => {
-                navigate(`/room/${v4()}`);
-            }}>
-                Create New Room
-            </Button>
-        </div>
+            </div>
+            </div>
     );
 }
 {/* <a target="_blank" href="https://icons8.com/icon/eaQh9NFNoyZJ/pause">Пауза</a> иконка от <a target="_blank" href="https://icons8.com">Icons8</a> */}

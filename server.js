@@ -1,11 +1,16 @@
 const path = require('path');
+const fs = require('fs');
+const https = require('https');
 const express = require('express');
 const app = express();
-const server = require('http').createServer(app);
+// const server = require('http').createServer(app);
+const key = fs.readFileSync('cert.key');
+const cert = fs.readFileSync('cert.crt');
+const server = https.createServer({key, cert}, app);
 const io = require('socket.io')(server,{
   cors:{
     origin:[
-      'http://192.168.1.80'
+      'https://192.168.1.80'
     ],
     methods:["GET","POST"]
   }
@@ -15,7 +20,7 @@ const {roles,gamePhases,gameStates} = require('./src/mafiavariables');
 
 const ACTIONS = require('./src/socket/actions');
 const { copyFileSync } = require('fs');
-const { METHODS } = require('http');
+const { METHODS } = require('https');
 const PORT = process.env.PORT || 3001;
 
 //Возвращает список всех комнат, которые сущестувют
@@ -570,6 +575,7 @@ const putToVoteHandler = ({playerNumber:playerNumber,roomID:roomID}) =>{
 const publicPath = path.join(__dirname, 'build');
 
 app.use(express.static(publicPath));
+// app.use(express.static(__dirname));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));

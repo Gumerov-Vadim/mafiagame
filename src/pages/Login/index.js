@@ -4,6 +4,7 @@ import { auth } from '../../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import Navbar from '../../components/Navbar';
 import {Input, Button} from '../../components/UI'
+import "./Login.css"
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -24,7 +25,8 @@ const Login = () => {
 
     return (
         <div>
-          <Navbar/>
+          <Navbar style={{position:'fixed'}}/>
+          <div style={{display:'flex',justifyContent:'flex-start',flexDirection:'column',alignItems:'center',height:'100vh',paddingTop:'100px'}}>
             <h2>Авторизация</h2>
             <form onSubmit={handleSubmit}>
                 <Input
@@ -42,7 +44,8 @@ const Login = () => {
                 <Button type="submit">Войти</Button>
                 {error && <p style={{ color: 'red' }}>{error}</p>}
             </form>
-        </div>
+            </div>
+            </div>
     );
 }
 

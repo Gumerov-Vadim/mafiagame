@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { setDoc, doc } from 'firebase/firestore';
 import Navbar from '../../components/Navbar';
 import { Button, Input } from '../../components/UI';
+import './Signup.css';
 const Signup = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -33,14 +34,15 @@ const Signup = () => {
 
     return (
         <div>
-            <Navbar />
+            <Navbar style={{position:'fixed'}}/>
+            <div style={{display:'flex',justifyContent:'flex-start',flexDirection:'column',alignItems:'center',height:'100vh',paddingTop:'100px'}}>
             <h2>Регистрация</h2>
             <form onSubmit={handleSubmit}>
                 <Input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Name"
+                    placeholder="Имя"
                 />
                 <Input
                     type="email"
@@ -57,6 +59,7 @@ const Signup = () => {
                 <Button type="submit">Зарегистрироваться</Button>
             </form>
             {error && <p style={{ color: 'red' }}>{error}</p>}
+            </div>
         </div>
     );
 }

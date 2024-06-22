@@ -14,6 +14,7 @@ import DisableCamIcon from '../../images/icons/disablecam.png';
 import MuteMicIcon from '../../images/icons/mutemic.png';
 import UnmuteMicIcon from '../../images/icons/unmutemic.png';
 import { useNavigate } from 'react-router';
+import CopyLinkButton from '../../components/CopyLinkButton';
 const {roles,gamePhases,gameStates} = require('../../mafiavariables');
 const ACTIONS = require('../../socket/actions');
 
@@ -127,7 +128,7 @@ export default function Room() {
           <textarea id="notes" placeholder="Оставьте здесь свои заметки..." rows="10" cols="50"></textarea>
       </div>
       </>)}
-    {gameState===gameStates.IDLE&&(<><p>Это информативный блок!</p><p>Ожидание игроков...</p></>)}
+    {gameState===gameStates.IDLE&&(<><p>Это информативный блок!</p><p>Ожидание игроков...</p><CopyLinkButton></CopyLinkButton></>)}
     {gameState===gameStates.IS_PAUSED&&(<>
       <p>Таймер: <span id="timer">Игра приостановлена</span></p>
       <p>Круг: 1. {gamePhase}</p>
