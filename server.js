@@ -195,7 +195,7 @@ function initGame(roomID,clients){
   
   games[roomID] = {
       moderator:moderator,
-      remainingTime:3,
+      remainingTime:60,
       state: gameStates.GAME_ON,
       phase:gamePhases.DAY,
       circleCount:0,
@@ -231,7 +231,7 @@ function gameTick(){
 
       switch (game.phase){
         case gamePhases.DAY:
-          game.remainingTime=3;//60
+          game.remainingTime=60;//60
           //человек договорил, записываем его к людям, которые поговорили и передаём ход следующему
           game.talkedPlayers.push(game.currentTurnPlayerNumber);
           do{
@@ -425,6 +425,12 @@ io.on('connection', socket => {
         case ACTIONS.MA.RESUME_GAME:
           resumeGame(roomID);
           break;
+          case ACTIONS.MA.FAST_BACKWARD:
+          fastBackward(roomID);
+          break;
+          case ACTIONS.MA.FAST_FORWARD:
+          fastForward(roomID);
+          break;
         case ACTIONS.MA.FINISH_GAME:
           finishGame(roomID,clients);
           break;
@@ -464,7 +470,18 @@ function resumeGame(roomID){
   sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_STATE,{state:gameStates.GAME_ON});
   //Interval gameloop
 }
-
+function fastBackward(roomID){
+  const game = games[roomID];
+  if(game?.phase===gamePhases.DAY){
+    game.talkedPlayers.pop();
+    game.currentTurnPlayerNumber=--game.currentTurnPlayerNumber;
+    game.remainingTime=60;
+    sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_CURRENT_TURN_PLAYER,{curTurnPlayerNumber:game.currentTurnPlayerNumber})
+  }
+}
+function fastForward(roomID){
+  games[roomID].remainingTime = 1;
+}
 function finishGame(roomID){
   games[roomID].state= gameStates.IDLE;
   sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_STATE,{state:gameStates.IDLE});

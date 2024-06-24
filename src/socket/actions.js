@@ -21,6 +21,8 @@ const ACTIONS = {
         START_GAME:'start-game',
         PAUSE_GAME:'ma-pause-game',
         RESUME_GAME:'ma-resume-game',
+        FAST_BACKWARD:'fast-backward',
+        FAST_FORWARD:'fast-forward',
         RESTART_GAME:'ma-restart-game',
         FINISH_GAME:'ma-finish-game',
     }, 

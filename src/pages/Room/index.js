@@ -23,7 +23,7 @@ export default function Room() {
   const navigate = useNavigate();
   const { id: roomID } = useParams();
   const { clients, provideMediaRef, toggleMic,toggleCam,MAtoggleMic,MAtoggleCam,
-    handlePause,handleContinue,handleRestart,handleEndGame,handleStart,
+    handlePause,handleContinue,handleFastBackward,handleFastForward,handleRestart,handleEndGame,handleStart,
      isModerator,myClientID,
      isCamAllowed,isMicAllowed,isCamEnabled,isMicEnabled,
      isRejected,
@@ -57,7 +57,6 @@ export default function Room() {
     if (!isMicAllowed) return MicIsNotAllowedIcon;
     return isMicEnabled ? UnmuteMicIcon : MuteMicIcon;
   };
-  
   return testVideo?(
     <div>
       {message&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>{message}</FullscreenOverlay>)}
@@ -69,6 +68,8 @@ export default function Room() {
         onStart={handleStart}
         onPause={handlePause}
         onContinue={handleContinue}
+        onFastBackward={handleFastBackward}
+        onFastForward={handleFastForward}
         onRestart={handleRestart}
         onEndGame={handleEndGame}
         />

@@ -14,6 +14,8 @@ const GameControlPanel = ({
   onStart,
   onPause,
   onContinue,
+  onFastBackward,
+  onFastForward,
   onRestart,
   onEndGame,
   children,
@@ -38,7 +40,14 @@ const GameControlPanel = ({
     setIsPaused(false);
     onContinue?.();
   };
-
+const handleFastBackward = ()=>{
+  console.log('Game FastBackWard!');
+  onFastBackward?.();
+};
+const handleFastForward = ()=>{
+  console.log('Game FastFastWard!');
+  onFastForward?.();
+};
   const handleRestart = () => {
     console.log('Game restarted!');
     setIsPaused(false);
@@ -69,10 +78,10 @@ const GameControlPanel = ({
               <Button onClick={handlePause} title="Pause">
                 <img src={pauseIcon} alt="Pause"/>
               </Button>
-              <Button title="Fast Backward">
+              <Button onClick={handleFastBackward} title="Fast Backward">
                 <img src={fastbackwardIcon} alt="Fast backward"/>
               </Button>
-              <Button title="Fast Forward">
+              <Button onClick={handleFastForward} title="Fast Forward">
                 <img src={fastforwardIcon} alt="Fast Forward"/>
               </Button>
             </>

@@ -509,6 +509,13 @@ export default function useWebRTC(roomID) {
   const handleContinue = useCallback(()=>{
     socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action: ACTIONS.MA.RESUME_GAME} )
   },[])
+  const handleFastBackward = useCallback(()=>{
+    socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action:ACTIONS.MA.FAST_BACKWARD});
+  },[])
+  const handleFastForward = useCallback(()=>{
+    console.log(`fastfw client`);
+    socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action:ACTIONS.MA.FAST_FORWARD});
+  },[])
   const handleStart = useCallback(()=>{
     socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:'all',action: ACTIONS.MA.START_GAME} )
   },[])
@@ -545,7 +552,7 @@ export default function useWebRTC(roomID) {
     provideMediaRef,
     toggleMic,toggleCam,
     MAtoggleMic,MAtoggleCam,
-    handlePause,handleContinue,handleRestart,handleEndGame,handleStart,
+    handlePause,handleContinue,handleFastBackward,handleFastForward,handleRestart,handleEndGame,handleStart,
     isModerator,myClientID,
     isCamAllowed,
     isMicAllowed,
