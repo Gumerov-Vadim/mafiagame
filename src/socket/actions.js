@@ -32,7 +32,8 @@ const ACTIONS = {
     VOTE:'vote',
     SHERIFF_CHECK:'sheriff-check',
     DON_CHECK:'don-check',
-    MAFIA_SHOT:'mafia-shot'
+    MAFIA_SHOT:'mafia-shot',
+    CHECK_ROLE:'check-role',
     },
     CLIENT_INFO: 'client-info',
     GAME_EVENT:{

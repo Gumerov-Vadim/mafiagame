@@ -139,7 +139,7 @@ function sharePlayers(game){
         }
       })
     }
-    else if(playerToEmit.role===(roles.MAFIA||roles.DON)){
+    else if(playerToEmit.role===roles.MAFIA){
       game.players.forEach(player=>{
       players[player.clientID]=
       {
@@ -147,7 +147,33 @@ function sharePlayers(game){
         name:usersData[player.clientID].name,
         gender:usersData[player.clientID].gender,
         number:player.number,
-        role:playerToEmit.clientID===player.clientID?player.role:(player.role===(roles.MAFIA||roles.DON))?player.role:'',
+        role:playerToEmit.clientID===player.clientID?player.role:(player.role===(roles.MAFIA||roles.DON||roles.GAME_MASTER))?player.role:'',
+        isAlive:player.isAlive,
+      }
+      })
+    }
+    else if(playerToEmit.role===roles.DON){
+      game.players.forEach(player=>{
+      players[player.clientID]=
+      {
+        clientID:player.clientID,
+        name:usersData[player.clientID].name,
+        gender:usersData[player.clientID].gender,
+        number:player.number,
+        role:playerToEmit.clientID===player.clientID?player.role:((player.role===(roles.MAFIA||roles.DON||roles.GAME_MASTER))||game.DonsChecks.includes(player.number))?player.role:'',
+        isAlive:player.isAlive,
+      }
+      })
+    }
+    else if(playerToEmit.role===roles.SHERIFF){
+      game.players.forEach(player=>{
+      players[player.clientID]=
+      {
+        clientID:player.clientID,
+        name:usersData[player.clientID].name,
+        gender:usersData[player.clientID].gender,
+        number:player.number,
+        role:playerToEmit.clientID===player.clientID?player.role:(game.SheriffsChecks.includes(player.number)||player.role===roles.GAME_MASTER)?player.role:'',
         isAlive:player.isAlive,
       }
       })
@@ -204,6 +230,7 @@ function initGame(roomID,clients){
       talkedPlayers:[],
       SheriffsChecks:[],
       DonsChecks:[],
+      shots:[],
       players:listOfPlayers,
       voting:{
         playersToVote:[],
@@ -260,6 +287,7 @@ function gameTick(){
         case gamePhases.VOTING:
           // если 
           game.remainingTime=5;
+          game.talkedPlayers = [];
           switch(game.voting.isRevoting){
             
             default:
@@ -350,8 +378,33 @@ function gameTick(){
           }
           break;
         case gamePhases.NIGHT:
-          game.remainingTime=8;//30
-          //emitы для шерифа, дона разрешение на проверки, мафия выбирает кого убить
+          game.remainingTime=2;
+          console.log(`[...new Set(game.shots)]:${JSON.stringify([...new Set(game.shots)])}\n
+          game.players:${JSON.stringify(game.players)}\n
+          game.shots:${JSON.stringify(game.shots)}`)
+          setTimeout(()=>{
+            if(([...new Set(game.shots)].length)===1){
+              sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:'Звук выстрела.'});
+              console.log(`players:${JSON.stringify(game.players)},\ngame.shots${JSON.stringify(game.shots)}`);
+              const player = game.players.find(player=>{return player.number===game.shots.pop()})
+           if(player){
+            console.log(`player:${JSON.stringify(player)}`);
+              // player?.isAlive = false;
+            }
+            }else{
+              sendEmitToAll(game,ACTIONS.GAME_EVENT.MESSAGE,{mes:'несострел...'});
+            }
+
+            game.remainingTime=3;
+            game.phase=gamePhases.DAY;
+            sendEmitToAll(game,ACTIONS.GAME_EVENT.SHARE_PHASE,{phase:game.phase});
+            game.circleCount = ++game.circleCount;
+            game.curTurnPlayerNumber = game.circleCount + 1;
+          },1000);
+          //30
+          //emit мафия выбирает в кого выстрелить...
+          //Шериф и дон выбирают кого проверить...
+          //Город просыпается
         break;
       }
     }
@@ -489,11 +542,44 @@ function finishGame(roomID){
   //emit уведомление о завершении
   //delete users role, number, data и прочее...
 }
-const putToVoteHandler = ({playerNumber:playerNumber,roomID:roomID}) =>{
-  games[roomID]?.voting?.playersToVote.push(playerNumber);
-  sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,{playersToVote:games[roomID]?.voting?.playersToVote})
-}
+
+  //Обработчик действия выставления игрока на голосование
+  const putToVoteHandler = ({playerNumber:playerNumber,roomID:roomID}) =>{
+    games[roomID]?.voting?.playersToVote.push(playerNumber);
+    sendEmitToAll(games[roomID],ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,{playersToVote:games[roomID]?.voting?.playersToVote})
+  }
+  //Игрок выставил на голосование
   socket.on(ACTIONS.PLAYERS_ACTION.PUT_TO_VOTE,putToVoteHandler)
+  //Проголосовать на голосовании
+  const voteHandler = ({roomID:roomID, playerNumber:playerNumber, clientID:clientID})=>{
+    (games[roomID]?.players.find(player=>{return player.clientID===clientID})).myVote=playerNumber;
+    io.to(clientID).emit(ACTIONS.GAME_EVENT.SHARE_MY_VOTE,playerNumber);
+  }
+  socket.on(ACTIONS.PLAYERS_ACTION.VOTE,voteHandler);
+  //Проверить игрока
+  const checkRoleHandler = ({roomID:roomID, playerNumber:playerNumber, clientID:clientID})=>{
+    const game = games[roomID];
+    const player = (game?.players.find(player=>{return player.clientID===clientID}));
+    if(player.role === roles.SHERIFF){
+      game.SheriffsChecks.push(playerNumber);
+    } else if(player.role === roles.DON){
+      game.DonsChecks.push(playerNumber);  
+    }
+    sharePlayers(game);
+  }
+  socket.on(ACTIONS.PLAYERS_ACTION.CHECK_ROLE,checkRoleHandler);
+  //Сделать выстрел
+  const mafiaShotHandler = ({roomID:roomID, playerNumber:playerNumber, clientID:clientID})=>{
+    const game = games[roomID];
+    const player = (game?.players.find(player=>{return player.clientID===clientID}));
+    if(player.role === roles.MAFIA||roles.DON){
+      games[roomID].shots.push(playerNumber);
+    }
+    // if(game.shots.length>=(game.players.filter(player=>{return player.role===roles.MAFIA||roles.DON})).length){
+
+    // }
+  }
+  socket.on(ACTIONS.PLAYERS_ACTION.MAFIA_SHOT,mafiaShotHandler);
   //Функция для выхода из комнаты
   function leaveRoom() {
     console.log("Socket disconnected!");

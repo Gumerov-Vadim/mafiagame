@@ -29,12 +29,13 @@ export default function Room() {
      isRejected,
      message,remainingTime,currentTurnPlayerNumber,gamePhase,gameState,playersInfo,
      putUpForVotePlayer,myPutUpVotePlayerNumber,playersToVote,currentPlayerToVote,
+     checkRole, mafiaShot, votePlayer,myVote,myRole,
+     isAllowedCheck,isAllowedShot,isAllowedVote,
     } = useWebRTC(roomID);
-  const [testVideo,setTestVideo] = useState(true);
-  const test = (index)=>{
-    return index%2===1?'test1':'test2';
-  }
-
+    const [testVideo,setTestVideo] = useState(true);
+    const test = (index)=>{
+      return index%2===1?'test1':'test2';
+    }
   function videoLayout(){
     const defaultClassName = 'video-wrapper'
     const testClassName = ' test'
@@ -59,9 +60,57 @@ export default function Room() {
   };
   return testVideo?(
     <div>
+      {/*
+      checkRole, mafiaShot, votePlayer,*/}
       {message&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>{message}</FullscreenOverlay>)}
-      {(currentPlayerToVote!==0)&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'><p style={{fontSize:'24px'}}>Проголосовать за исключение игрока №{currentTurnPlayerNumber}?</p><p style={{fontSize:'24px'}}>{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.name}</p><Button style={{marginTop:'20px'}}>Проголосовать!</Button></FullscreenOverlay>)}
-      {isRejected&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>{isRejected}<Button style={{marginTop:'20px'}} onClick={() => {navigate(`/`);}}>Вернуться на главную</Button></FullscreenOverlay>)}
+      {(currentPlayerToVote!==0)&&(!myVote?(<>
+        <FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>
+          <p style={{fontSize:'24px'}}>Проголосовать за исключение игрока №{currentTurnPlayerNumber}?</p>
+          <p style={{fontSize:'24px'}}>{Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.name}</p>
+          <Button onClick={()=>{votePlayer(Object.values(playersInfo).find(player=>{return player.number===currentTurnPlayerNumber})?.number)}} style={{marginTop:'20px'}}>Проголосовать!</Button>
+          <p>Осталось времени: {remainingTime}</p>
+        </FullscreenOverlay>)</>)
+        :
+        (<>
+        <FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>
+          Вы проголосовали за игрока №{myVote}!
+        </FullscreenOverlay>
+      </>))}
+      {isRejected&&(<FullscreenOverlay bgcolor='rgba(0,0,0,0.9)'>
+        {isRejected}
+        <Button style={{marginTop:'20px'}} onClick={() => {navigate(`/`);}}>
+        Вернуться на главную
+        </Button>
+        </FullscreenOverlay>)}
+
+
+{gamePhase === gamePhases.NIGHT && (
+  <FullscreenOverlay bgcolor='rgba(0,0,0,1.0)'>
+    {((myRole === roles.MAFIA) || (myRole === roles.DON)) && isAllowedShot ? (
+      <>
+        Выберите игрока, в которого вы хотите выстрелить:
+        {Object.values(playersInfo).filter(player => (player.isAlive)&&(player.number!==0)).map(player => (
+          <Button onClick={() => mafiaShot(player.number)} key={player.number}>
+            {player.number}
+          </Button>
+        ))}
+      </>
+    ) : ((myRole === roles.DON) || (myRole === roles.SHERIFF))&&isAllowedCheck ? (
+      <>
+        Выберите игрока, которого вы хотите проверить:
+        {Object.values(playersInfo).filter(player => (player.isAlive)&&(player.number!==0)).map(player => (
+          <Button onClick={() => checkRole(player.number)} key={player.number}>
+            {player.number}
+          </Button>
+        ))}
+      </>
+    ) : (
+      <>
+        <p>В городе ночь.</p>
+      </>
+    )}
+  </FullscreenOverlay>
+)}
       <Navbar/>
       {isModerator&&(
       <GameControlPanel className='gc-panel'

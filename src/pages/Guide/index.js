@@ -7,6 +7,7 @@ import * as fp from "fingerpose";
 import Navbar from '../../components/Navbar';
 import {loveYouGesture} from "../../gestures/LoveYou"; 
 import {first} from "../../gestures/First"; 
+import { timeout } from "../../socket";
 
 export default function Guide() {
   const webcamRef = useRef(null);
@@ -65,6 +66,7 @@ export default function Guide() {
       };
 
       const interval = setInterval(detect, 200);
+      
       return () => clearInterval(interval);
     };
 
@@ -115,7 +117,7 @@ export default function Guide() {
           color: 'cyan',
           fontSize:'32px',
         }} className="sign-name">
-        {signNamesList[signName]}
+        {/* {signNamesList[signName]} */}
       </div>
       <div style={{
           position: "absolute",

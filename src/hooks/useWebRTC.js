@@ -284,6 +284,13 @@ export default function useWebRTC(roomID) {
   const [gamePhase,setGamePhase] = useState('');
   useEffect(()=>{
     socket.on(ACTIONS.GAME_EVENT.SHARE_PHASE,({phase:phase})=>{
+      if(phase===gamePhases.VOTING){
+        setMyVote(0);
+      }
+      else if(phase === gamePhases.NIGHT){
+        setIsAllowedShot(true);
+        setIsAllowedCheck(true);
+      }
       setGamePhase(phase);
     });
   },[gamePhase]);
@@ -307,11 +314,17 @@ export default function useWebRTC(roomID) {
   useEffect(()=>{
     setMyClientID(socket.id);
   },[socket.id])
-
+  
+  const [myRole,setMyRole]=useState('');
+  useEffect(()=>{
+    setMyRole((Object.values(playersInfo).find(player=>{return player.clientID===myClientID}))?.role)
+  },[myRole,playersInfo]);
   //Ночью мой выставленный игрок обнуляется
   const [myPutUpVotePlayerNumber,setMyPutUpVotePlayerNumber] = useState(0);
   useEffect(()=>{
     if(gamePhase===gamePhases.NIGHT){
+      if(myRole===roles.DON||myRole===roles.SHERIFF){setIsAllowedCheck(true);}
+      if(myRole===roles.DON||myRole===roles.MAFIA){setIsAllowedShot(true);}
       setMyPutUpVotePlayerNumber(0);
     }
   },[myClientID,myPutUpVotePlayerNumber,currentTurnPlayerNumber])
@@ -322,11 +335,37 @@ export default function useWebRTC(roomID) {
     socket.emit(ACTIONS.PLAYERS_ACTION.PUT_TO_VOTE,{playerNumber:playerNumber,roomID:roomID});
   },[myPutUpVotePlayerNumber]);
   
+  const [isAllowedCheck,setIsAllowedCheck] = useState(false);
+  const [isAllowedShot,setIsAllowedShot] = useState(false);
+  const [isAllowedVote,setIsAllowedVote] = useState(false);
+  const checkRole = useCallback((playerNumber)=>{
+    socket.emit(ACTIONS.PLAYERS_ACTION.CHECK_ROLE,{roomID:roomID,playerNumber:playerNumber,clientID:socket.id});
+    setIsAllowedCheck(false);
+  },[isAllowedCheck]);
+  const votePlayer = useCallback((playerNumber)=>{
+    setIsAllowedVote(false);
+    socket.emit(ACTIONS.PLAYERS_ACTION.VOTE,{roomID:roomID,playerNumber:playerNumber,clientID:socket.id});
+  },[isAllowedVote]);
+  const [myVote,setMyVote]=useState(0);
+  useEffect(()=>{
+    const shareMyVoteHandler = (playerNumber)=>{
+      setMyVote(playerNumber);
+    }
+    socket.on(ACTIONS.GAME_EVENT.SHARE_MY_VOTE,shareMyVoteHandler);
+  },[myVote]);
+  const mafiaShot = useCallback((playerNumber)=>{
+    setIsAllowedShot(false);
+    socket.emit(ACTIONS.PLAYERS_ACTION.MAFIA_SHOT,{roomID:roomID,playerNumber:playerNumber,clientID:socket.id});
+  },[]);
+
   //Получение списка игроков выставленных на голосование
   const[playersToVote,setPlayersToVote] = useState([]);
   useEffect(()=>{
     socket.on(ACTIONS.GAME_EVENT.SHARE_PUT_UP_FOR_VOTE,({playersToVote:playersToVote})=>{
       let stringPlayersToVote = '';
+      playersToVote.forEach(player=>{
+        stringPlayersToVote = stringPlayersToVote+player+' ';
+      })
       setPlayersToVote(stringPlayersToVote);
     })
   },[playersToVote]);
@@ -338,6 +377,17 @@ export default function useWebRTC(roomID) {
       setCurrentPlayerToVote(playerToVote);
     });
   },[currentPlayerToVote]);
+
+  // const[canCheck,setCanCheck] = useState(0);
+  // useEffect(()=>{
+    
+  // },[canCheck]);
+  // checkRole = useCallback((playerNumber)=>{
+  //   socket.emit(ACTIONS.PLAYERS_ACTION.CHECK_ROLE,{playerNumber:playerNumber});
+  // },[canCheck]);
+  // const[canShot,setCanShot] = useState(true);
+
+
   const [isCamAllowed,setIsCamAllowed] = useState(true);
   const [isMicAllowed,setIsMicAllowed] = useState(true);
   const [isCamEnabled,setIsCamEnabled] = useState(true);
@@ -495,6 +545,7 @@ export default function useWebRTC(roomID) {
     });
   });
 
+
   const MAtoggleMic = useCallback((peerID)=>{
     socket.emit(ACTIONS.MODERATOR_ACTION, {targetClientID:peerID,action: ACTIONS.MA.CHANGE_PLAYER_MIC_ALLOW} )
 },[])
@@ -561,6 +612,9 @@ export default function useWebRTC(roomID) {
     isRejected,
     message,remainingTime,currentTurnPlayerNumber,gamePhase,gameState,playersInfo,
     putUpForVotePlayer,myPutUpVotePlayerNumber,playersToVote,currentPlayerToVote,
+    checkRole, mafiaShot, votePlayer,myVote,myRole,
+    isAllowedCheck,isAllowedShot,isAllowedVote,
+    // canCheck,canShot,
   };
 
 }
